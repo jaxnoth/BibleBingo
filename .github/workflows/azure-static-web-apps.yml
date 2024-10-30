@@ -16,6 +16,12 @@ jobs:
     name: Build and Deploy Job
     steps:
       - uses: actions/checkout@v3
+
+      - name: Create env.js
+        run: |
+          echo "window.ENV_GROQ_API_KEY = '${{ secrets.GROQ_API_KEY }}';" > env.js
+          echo "window.ENV_PIXABAY_API_KEY = '${{ secrets.PIXABAY_API_KEY }}';" >> env.js
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -23,6 +29,6 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "/" # Location of your app code
-          output_location: "" # Leave empty for static HTML/JS/CSS
-          skip_app_build: true # Skip build step for static files
+          app_location: "/"
+          output_location: ""
+          skip_app_build: true

@@ -1,24 +1,45 @@
-# Dependencies
-node_modules/
-package-lock.json
-
-# Environment variables
+# Environment and config files
+env.js
 .env
 .env.local
-config.js
+.env.development
+.env.production
+config.local.js
 
-# IDE/Editor specific
+# IDE and Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
+Thumbs.db
 
-# Build/Deploy
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
 dist/
 build/
-*.log
+out/
 
-# API Keys and Secrets
-**/config.js
-**/secrets.js
+# Cache directories
+.cache/
+.temp/
+
+# Local SSL certificates
+*.pem
+*.key
+*.crt
+
+# Azure Functions local settings
+local.settings.json
+
+# Misc
+*.log
+.DS_Store
