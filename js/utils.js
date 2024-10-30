@@ -41,13 +41,16 @@ async function getImageUrlFromDescription(description) {
 
         // Check cache first
         if (imageCache.has(searchTerm)) {
+            log('Cache hit for:', searchTerm);
             const cachedUrl = imageCache.get(searchTerm);
             if (!usedImages.has(cachedUrl)) {
                 usedImages.add(cachedUrl);
                 return cachedUrl;
             }
+            log('Cached image already used, fetching new one');
         }
 
+        log('Cache miss for:', searchTerm);
         // Construct Pixabay API URL
         const apiUrl = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=${IMAGE_TYPE}&orientation=${ORIENTATION}&safesearch=${SAFE_SEARCH}`;
 
@@ -62,6 +65,7 @@ async function getImageUrlFromDescription(description) {
                 const imageUrl = randomHit.webformatURL;
 
                 // Cache the URL and mark as used
+                log('Caching new image for:', searchTerm);
                 imageCache.set(searchTerm, imageUrl);
                 usedImages.add(imageUrl);
 
@@ -69,7 +73,7 @@ async function getImageUrlFromDescription(description) {
             }
         }
 
-        // Return data URL for a colored rectangle
+        log('No images found, using fallback');
         return createColoredBackground(description);
     } catch (error) {
         console.error('Error fetching image:', error);

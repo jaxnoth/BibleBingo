@@ -8,31 +8,52 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 class ImageCache {
     constructor() {
         this.cache = new Map();
+        this.loadFromStorage();
+    }
+
+    loadFromStorage() {
+        try {
+            const stored = localStorage.getItem('imageCache');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                Object.entries(parsed).forEach(([key, entry]) => {
+                    if (Date.now() - entry.timestamp < CACHE_DURATION) {
+                        this.cache.set(key, entry.value);
+                    }
+                });
+            }
+        } catch (error) {
+            console.log('Failed to load image cache:', error);
+        }
     }
 
     set(key, value) {
-        this.cache.set(key, {
-            value,
-            timestamp: Date.now()
-        });
+        this.cache.set(key, value);
+        try {
+            const cacheObject = {};
+            this.cache.forEach((value, key) => {
+                cacheObject[key] = {
+                    value: value,
+                    timestamp: Date.now()
+                };
+            });
+            localStorage.setItem('imageCache', JSON.stringify(cacheObject));
+        } catch (error) {
+            console.log('Failed to save image cache:', error);
+        }
     }
 
     get(key) {
-        const entry = this.cache.get(key);
-        if (!entry) return null;
-        if (Date.now() - entry.timestamp > CACHE_DURATION) {
-            this.cache.delete(key);
-            return null;
-        }
-        return entry.value;
+        return this.cache.get(key);
     }
 
     has(key) {
-        return this.get(key) !== null;
+        return this.cache.has(key);
     }
 
     clear() {
         this.cache.clear();
+        localStorage.removeItem('imageCache');
     }
 }
 
