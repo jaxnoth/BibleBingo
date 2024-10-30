@@ -18,7 +18,7 @@ class ImageCache {
                 const parsed = JSON.parse(stored);
                 Object.entries(parsed).forEach(([key, entry]) => {
                     if (Date.now() - entry.timestamp < CACHE_DURATION) {
-                        this.cache.set(key, entry.value);
+                        this.cache.set(key, entry.urls);
                     }
                 });
             }
@@ -28,12 +28,17 @@ class ImageCache {
     }
 
     set(key, value) {
-        this.cache.set(key, value);
+        const urls = this.cache.get(key) || [];
+        if (!urls.includes(value)) {
+            urls.push(value);
+            this.cache.set(key, urls);
+        }
+
         try {
             const cacheObject = {};
-            this.cache.forEach((value, key) => {
+            this.cache.forEach((urls, key) => {
                 cacheObject[key] = {
-                    value: value,
+                    urls: urls,
                     timestamp: Date.now()
                 };
             });
@@ -44,11 +49,19 @@ class ImageCache {
     }
 
     get(key) {
-        return this.cache.get(key);
+        const urls = this.cache.get(key);
+        if (!urls || urls.length === 0) return null;
+
+        const unusedUrls = urls.filter(url => !usedImages.has(url));
+        if (unusedUrls.length === 0) return null;
+
+        return unusedUrls[Math.floor(Math.random() * unusedUrls.length)];
     }
 
     has(key) {
-        return this.cache.has(key);
+        const urls = this.cache.get(key);
+        if (!urls || urls.length === 0) return false;
+        return urls.some(url => !usedImages.has(url));
     }
 
     clear() {
