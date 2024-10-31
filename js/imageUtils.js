@@ -100,14 +100,16 @@ async function getImageUrlFromDescription(description) {
             return window.imageCache.get(searchTerm);
         }
 
-        // Verify API key exists
-        if (!window.env?.PIXABAY_API_KEY) {
-            console.error('Pixabay API key not configured');
+        // Get API key from either env.js (local) or environment variables (production)
+        const apiKey = window.env?.PIXABAY_API_KEY || process.env.PIXABAY_API_KEY;
+
+        if (!apiKey) {
+            console.error('Pixabay API key not found in environment or env.js');
             return null;
         }
 
         console.log('Fetching from Pixabay:', searchTerm);
-        const response = await fetch(`https://pixabay.com/api/?key=${window.env.PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
+        const response = await fetch(`https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchTerm)}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
 
         if (!response.ok) {
             throw new Error(`Pixabay API error: ${response.status}`);

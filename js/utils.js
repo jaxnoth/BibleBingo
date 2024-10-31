@@ -176,13 +176,16 @@ const fallbackTopics = [
 async function getSermonTopics(reference) {
     console.log('Getting topics for reference:', reference);
 
-    if (!reference || reference.trim() === '') {
-        console.log('No reference provided, using default topics');
+    // Get API key from either env.js (local) or environment variables (production)
+    const apiKey = window.env?.GROQ_API_KEY || process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+        console.log('GROQ API key not found in environment or env.js, using default topics');
         return shuffleArray([...fallbackTopics]);
     }
 
-    if (!window.env?.GROQ_API_KEY) {
-        console.log('GROQ API key not configured in env.js, using default topics');
+    if (!reference || reference.trim() === '') {
+        console.log('No reference provided, using default topics');
         return shuffleArray([...fallbackTopics]);
     }
 
@@ -191,7 +194,7 @@ async function getSermonTopics(reference) {
             fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${window.env.GROQ_API_KEY}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
