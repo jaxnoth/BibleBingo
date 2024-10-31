@@ -14,25 +14,16 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" type="image/png" href="favicon.png">
 
-    <!-- Add config.js instead -->
-    <script src="js/config.js"></script>
+    <!-- Load the generated env.js -->
+    <script src="js/env.js"></script>
 
-    <!-- Add initialization check -->
+    <!-- Debug check -->
     <script>
-        // Wait for environment to be ready
-        async function waitForEnvironment() {
-            let attempts = 0;
-            while (!window.env?.PIXABAY_API_KEY && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            console.log('Environment check:', {
-                envExists: !!window.env,
-                pixabayKey: window.env?.PIXABAY_API_KEY ? 'exists' : 'missing',
-                groqKey: window.env?.GROQ_API_KEY ? 'exists' : 'missing'
-            });
-        }
-        waitForEnvironment();
+        console.log('Environment check:', {
+            envExists: !!window.env,
+            pixabayKey: window.env?.PIXABAY_API_KEY ? 'exists' : 'missing',
+            groqKey: window.env?.GROQ_API_KEY ? 'exists' : 'missing'
+        });
     </script>
 
     <!-- Other scripts -->
