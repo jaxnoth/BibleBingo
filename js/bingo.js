@@ -4,118 +4,110 @@
  */
 function checkForBingo() {
     const cells = document.querySelectorAll('.bingo-cell');
-    const size = 5;
-    const selected = Array.from(cells).map(cell => cell.classList.contains('selected'));
+    if (!cells || cells.length === 0) return;
+
+    const cellArray = Array.from(cells);
     let newBingo = false;
 
-    // Clear existing bingo line classes
-    cells.forEach(cell => {
-        cell.classList.remove('bingo-row', 'bingo-column', 'bingo-diagonal', 'bingo-multiple', 'super-bingo');
-    });
-
-    // Check for super bingo (all cells selected)
-    if (selected.every(Boolean)) {
-        cells.forEach(cell => cell.classList.add('super-bingo'));
-        if (!bingoStates.superBingo) {
-            bingoStates.superBingo = true;
-            startSuperCelebration();
-            return true;
-        }
-    } else {
-        bingoStates.superBingo = false;
-    }
-
-    // Track cells that are part of bingo lines
-    const bingoCells = new Map(); // cell index -> set of bingo types
+    // Remove winner class from all cells that are no longer part of a bingo
+    cellArray.forEach(cell => cell.classList.remove('winner'));
 
     // Check rows
-    for (let i = 0; i < size; i++) {
-        const rowComplete = selected.slice(i * size, (i + 1) * size).every(Boolean);
-        if (rowComplete && !bingoStates.rows.has(i)) {
-            bingoStates.rows.add(i);
-            newBingo = true;
-        } else if (!rowComplete && bingoStates.rows.has(i)) {
-            bingoStates.rows.delete(i);
-        }
+    for (let i = 0; i < 5; i++) {
+        const rowStart = i * 5;
+        const row = cellArray.slice(rowStart, rowStart + 5);
+        const isRowBingo = checkLine(row);
 
-        if (rowComplete) {
-            for (let j = 0; j < size; j++) {
-                const cellIndex = i * size + j;
-                if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
-                bingoCells.get(cellIndex).add('row');
-            }
+        if (isRowBingo && !bingoStates.rows[i]) {
+            // New bingo found
+            bingoStates.rows[i] = true;
+            row.forEach(cell => cell.classList.add('winner'));
+            newBingo = true;
+        } else if (!isRowBingo && bingoStates.rows[i]) {
+            // Bingo was broken
+            bingoStates.rows[i] = false;
         }
     }
 
     // Check columns
-    for (let i = 0; i < size; i++) {
-        const columnComplete = Array.from({length: size}, (_, j) => selected[i + j * size]).every(Boolean);
-        if (columnComplete && !bingoStates.columns.has(i)) {
-            bingoStates.columns.add(i);
-            newBingo = true;
-        } else if (!columnComplete && bingoStates.columns.has(i)) {
-            bingoStates.columns.delete(i);
-        }
+    for (let i = 0; i < 5; i++) {
+        const column = [0,1,2,3,4].map(j => cellArray[i + j * 5]);
+        const isColumnBingo = checkLine(column);
 
-        if (columnComplete) {
-            for (let j = 0; j < size; j++) {
-                const cellIndex = i + j * size;
-                if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
-                bingoCells.get(cellIndex).add('column');
-            }
+        if (isColumnBingo && !bingoStates.columns[i]) {
+            bingoStates.columns[i] = true;
+            column.forEach(cell => cell.classList.add('winner'));
+            newBingo = true;
+        } else if (!isColumnBingo && bingoStates.columns[i]) {
+            bingoStates.columns[i] = false;
         }
     }
 
     // Check diagonals
-    const diagonal1Complete = Array.from({length: size}, (_, i) => selected[i * size + i]).every(Boolean);
-    if (diagonal1Complete && !bingoStates.diagonals.has(0)) {
-        bingoStates.diagonals.add(0);
+    const diagonal1 = [0,6,12,18,24].map(i => cellArray[i]);
+    const diagonal2 = [4,8,12,16,20].map(i => cellArray[i]);
+
+    const isDiagonal1Bingo = checkLine(diagonal1);
+    if (isDiagonal1Bingo && !bingoStates.diagonals[0]) {
+        bingoStates.diagonals[0] = true;
+        diagonal1.forEach(cell => cell.classList.add('winner'));
         newBingo = true;
-    } else if (!diagonal1Complete && bingoStates.diagonals.has(0)) {
-        bingoStates.diagonals.delete(0);
+    } else if (!isDiagonal1Bingo && bingoStates.diagonals[0]) {
+        bingoStates.diagonals[0] = false;
     }
 
-    if (diagonal1Complete) {
-        for (let i = 0; i < size; i++) {
-            const cellIndex = i * size + i;
-            if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
-            bingoCells.get(cellIndex).add('diagonal');
-        }
-    }
-
-    const diagonal2Complete = Array.from({length: size}, (_, i) => selected[i * size + (size - 1 - i)]).every(Boolean);
-    if (diagonal2Complete && !bingoStates.diagonals.has(1)) {
-        bingoStates.diagonals.add(1);
+    const isDiagonal2Bingo = checkLine(diagonal2);
+    if (isDiagonal2Bingo && !bingoStates.diagonals[1]) {
+        bingoStates.diagonals[1] = true;
+        diagonal2.forEach(cell => cell.classList.add('winner'));
         newBingo = true;
-    } else if (!diagonal2Complete && bingoStates.diagonals.has(1)) {
-        bingoStates.diagonals.delete(1);
+    } else if (!isDiagonal2Bingo && bingoStates.diagonals[1]) {
+        bingoStates.diagonals[1] = false;
     }
 
-    if (diagonal2Complete) {
-        for (let i = 0; i < size; i++) {
-            const cellIndex = i * size + (size - 1 - i);
-            if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
-            bingoCells.get(cellIndex).add('diagonal');
-        }
+    // Check for super bingo (all cells marked)
+    const isSuperBingo = cellArray.every(cell => cell.classList.contains('marked'));
+
+    if (isSuperBingo) {
+        cellArray.forEach(cell => cell.classList.add('winner'));
+        window.celebrateSuperBingo();
+    } else if (newBingo) {
+        window.celebrateWin();
     }
 
-    // Apply visual classes based on bingo lines
-    bingoCells.forEach((types, index) => {
-        const cell = cells[index];
-        if (types.size > 1) {
-            cell.classList.add('bingo-multiple');
-        } else {
-            if (types.has('row')) cell.classList.add('bingo-row');
-            if (types.has('column')) cell.classList.add('bingo-column');
-            if (types.has('diagonal')) cell.classList.add('bingo-diagonal');
+    // Reapply winner class to all current bingos
+    reapplyWinnerClasses(cellArray);
+}
+
+function reapplyWinnerClasses(cellArray) {
+    // Rows
+    bingoStates.rows.forEach((isBingo, i) => {
+        if (isBingo) {
+            const rowStart = i * 5;
+            cellArray.slice(rowStart, rowStart + 5).forEach(cell => cell.classList.add('winner'));
         }
     });
 
-    if (newBingo) {
-        startCelebration();
-    }
+    // Columns
+    bingoStates.columns.forEach((isBingo, i) => {
+        if (isBingo) {
+            [0,1,2,3,4].forEach(j => cellArray[i + j * 5].classList.add('winner'));
+        }
+    });
 
-    return newBingo;
+    // Diagonals
+    if (bingoStates.diagonals[0]) {
+        [0,6,12,18,24].forEach(i => cellArray[i].classList.add('winner'));
+    }
+    if (bingoStates.diagonals[1]) {
+        [4,8,12,16,20].forEach(i => cellArray[i].classList.add('winner'));
+    }
+}
+
+function checkLine(cells) {
+    const isWinner = cells.every(cell => cell && cell.classList.contains('marked'));
+    console.log('Line check result:', isWinner); // Debug log
+    return isWinner;
 }
 
 /**
@@ -185,24 +177,32 @@ function handleTouch(event) {
     toggleCell({ currentTarget: cell });
 }
 
-function toggleCell(event) {
-    const cell = event.currentTarget;
-    cell.classList.toggle('selected');
+function toggleCell(cell) {
+    if (!cell) {
+        console.error('No cell provided to toggleCell');
+        return;
+    }
+
+    console.log('Toggling cell:', cell); // Debug log
+
+    // Toggle the marked class
+    cell.classList.toggle('marked');
+
+    // Check for bingo after toggling
     checkForBingo();
 }
 
-// Track bingo states
-const bingoStates = {
-    rows: new Set(),      // Store completed row indices
-    columns: new Set(),   // Store completed column indices
-    diagonals: new Set(),  // Store completed diagonal indices (0 = main, 1 = counter)
-    superBingo: false
+// Bingo state tracking
+let bingoStates = {
+    rows: new Array(5).fill(false),
+    columns: new Array(5).fill(false),
+    diagonals: new Array(2).fill(false)
 };
 
-// Add function to reset bingo states (call this when generating a new board)
 function resetBingoStates() {
-    bingoStates.rows.clear();
-    bingoStates.columns.clear();
-    bingoStates.diagonals.clear();
-    bingoStates.superBingo = false;
+    bingoStates = {
+        rows: new Array(5).fill(false),
+        columns: new Array(5).fill(false),
+        diagonals: new Array(2).fill(false)
+    };
 }

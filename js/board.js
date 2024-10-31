@@ -53,80 +53,65 @@ async function createBoard(topics) {
         return;
     }
 
-    // Clear any existing content (including loading message)
+    // Clear any existing content
     bingoCard.innerHTML = '';
 
     // Reset bingo states for new board
     resetBingoStates();
 
-    // Function to generate a consistent color from text
-    function stringToColor(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        // Generate pastel colors for better text visibility
-        const hue = hash % 360;
-        return `hsl(${hue}, 70%, 85%)`; // Pastel version
-    }
+    // Create cells
+    const shuffledTopics = shuffleArray([...topics]); // Create a copy before shuffling
+    let cellIndex = 0;
 
-    // Shuffle the topics
-    const shuffledTopics = [...topics].sort(() => Math.random() - 0.5);
-
-    // Create a 5x5 grid
-    for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+    for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.className = 'bingo-cell';
 
-        // Add FREE space in the middle
-        if (i === FREE_SPACE_INDEX) {
-            cell.classList.add('free-space');
-
-            // Add star SVG
-            const starSvg = `
-                <svg viewBox="0 0 51 48" class="star-icon">
-                    <path d="M25.5 0L31.4 18.3H50.5L35 29.6L40.9 47.9L25.5 36.6L10.1 47.9L16 29.6L0.5 18.3H19.6L25.5 0Z"
-                          fill="currentColor"/>
-                </svg>
+        // Center cell is always FREE
+        if (i === 12) {
+            cell.innerHTML = `
+                <div class="cell-content free-space-content">
+                    <svg class="star-background" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" pointer-events="none">
+                        <defs>
+                            <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                                <feOffset dx="2" dy="2" result="offsetblur"/>
+                                <feFlood flood-color="#000000" flood-opacity="0.3"/>
+                                <feComposite in2="offsetblur" operator="in"/>
+                                <feMerge>
+                                    <feMergeNode/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <path class="star" d="M50 0 L61 35 L97 35 L68 57 L79 91 L50 70 L21 91 L32 57 L3 35 L39 35 Z"
+                            style="fill:url(#starGradient); filter:url(#shadow);" />
+                        <path class="highlight" d="M50 0 L61 35 L97 35 L68 57 L79 91 L50 70"
+                            style="fill:none; stroke:#FFE45C; stroke-width:2; opacity:0.6;" />
+                    </svg>
+                    <span class="free-text" pointer-events="none">FREE<br>SPACE</span>
+                </div>
             `;
-            cell.innerHTML = starSvg + '<span>FREE</span>';
+            cell.classList.add('free-space', 'marked');
         } else {
-            // Get topic from shuffled array, accounting for FREE space
-            const topicIndex = i > FREE_SPACE_INDEX ? i - 1 : i;
-            const topic = shuffledTopics[topicIndex];
-
-            // Set a background color based on the word
-            const backgroundColor = stringToColor(topic.word);
-            cell.style.backgroundColor = backgroundColor;
-
-            try {
+            const topic = shuffledTopics[cellIndex];
+            if (topic) {
                 const imageUrl = await getImageUrlFromDescription(topic.imageDescription);
-                if (imageUrl) {
-                    const img = document.createElement('img');
-                    img.src = imageUrl;
-                    img.alt = topic.word;
-                    img.onerror = () => {
-                        img.style.display = 'none'; // Hide broken image
-                        cell.style.backgroundColor = backgroundColor; // Ensure background color is visible
-                    };
-                    cell.appendChild(img);
-                }
-            } catch (error) {
-                console.error('Error loading image:', error);
-                // Background color will show as fallback
+                cell.innerHTML = `
+                    <div class="cell-content">
+                        ${imageUrl ? `<img src="${imageUrl}" alt="${topic.imageDescription}">` : ''}
+                        <span class="cell-text">${topic.word}</span>
+                    </div>
+                `;
+                cellIndex++;
             }
-
-            const text = document.createElement('span');
-            text.textContent = topic.word;
-            cell.appendChild(text);
         }
 
-        cell.onclick = () => {
-            cell.classList.toggle('selected');
-            console.log('Cell clicked:', cell.textContent);
-            checkForBingo();
-        };
-
+        cell.addEventListener('click', () => toggleCell(cell));
         bingoCard.appendChild(cell);
     }
 }

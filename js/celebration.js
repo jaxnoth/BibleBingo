@@ -231,3 +231,78 @@ function startSuperCelebration() {
 
 // Cleanup on page unload
 window.addEventListener('unload', cleanupExistingCelebrations);
+
+// Make celebrateWin available globally
+window.celebrateWin = function() {
+    console.log('BINGO!');
+
+    // Show BINGO! message
+    const bingoMessage = document.getElementById('bingoMessage');
+    if (bingoMessage) {
+        bingoMessage.textContent = 'BINGO!';
+        bingoMessage.classList.remove('show'); // Reset animation
+        void bingoMessage.offsetWidth; // Force reflow
+        bingoMessage.classList.add('show');
+    }
+
+    // Create confetti
+    const colors = ['#ffd700', '#ff0000', '#00ff00', '#0000ff', '#ff00ff'];
+    const confettiCount = 50;
+
+    for (let i = 0; i < confettiCount; i++) {
+        createConfetti(colors[Math.floor(Math.random() * colors.length)]);
+    }
+}
+
+function createConfetti(color) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.backgroundColor = color;
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.animationDuration = (Math.random() * 2 + 1) + 's'; // Reduced duration
+    confetti.style.opacity = Math.random();
+
+    document.body.appendChild(confetti);
+
+    // Remove confetti sooner
+    setTimeout(() => {
+        confetti.remove();
+    }, 2000); // Reduced from 5000
+}
+
+function playWinSound() {
+    const audio = new Audio('sounds/win.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log('Sound autoplay blocked'));
+}
+
+window.celebrateSuperBingo = function() {
+    console.log('SUPER BINGO!');
+
+    // Show SUPER BINGO! message
+    const bingoMessage = document.getElementById('bingoMessage');
+    if (bingoMessage) {
+        bingoMessage.textContent = 'SUPER BINGO!';
+        bingoMessage.style.color = '#FFD700'; // Golden color
+        bingoMessage.style.fontSize = '5rem';  // Bigger text
+        bingoMessage.classList.remove('show');
+        void bingoMessage.offsetWidth;
+        bingoMessage.classList.add('show');
+    }
+
+    // Create extra confetti for super bingo
+    const colors = ['#ffd700', '#ffd700', '#ff0000', '#00ff00', '#0000ff']; // More gold
+    const confettiCount = 200; // Extra confetti
+
+    for (let i = 0; i < confettiCount; i++) {
+        createConfetti(colors[Math.floor(Math.random() * colors.length)]);
+    }
+
+    // Reset message style after animation
+    setTimeout(() => {
+        if (bingoMessage) {
+            bingoMessage.style.color = '';
+            bingoMessage.style.fontSize = '';
+        }
+    }, 2000);
+};

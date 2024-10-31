@@ -19,12 +19,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--card-background);
-    border: 3px solid var(--divider-color);
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 2px solid #ddd;
     border-radius: var(--border-radius);
     overflow: hidden;
     padding: 0;
     transition: all 0.3s ease;
+    cursor: pointer;
+    background: white;
 }
 
 .bingo-cell span {
@@ -179,7 +181,7 @@
 
 /* Update FREE space specific styles */
 .bingo-cell.free-space {
-    background-color: var(--primary-light);
+    background-color: white;
 }
 
 .bingo-cell.free-space span {
@@ -200,4 +202,167 @@
 .bingo-cell.free-space.selected .star-icon {
     color: white;
     opacity: 0.2;
+}
+
+.free-space .cell-text {
+    font-size: 1.5rem;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.free-space .cell-text:first-line {
+    font-size: 2rem; /* Bigger star */
+}
+
+.free-space .cell-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    perspective: 1000px; /* Adds depth perception */
+}
+
+.star-background {
+    position: absolute;
+    width: 90%;
+    height: 90%;
+    z-index: 1;
+    transition: all 0.3s ease;
+    transform: rotateY(10deg) rotateX(10deg); /* Slight rotation for 3D effect */
+    pointer-events: none; /* Ensures clicks pass through */
+}
+
+.free-text {
+    position: relative;
+    z-index: 2;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+    color: var(--text-primary);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Enhanced shadow for depth */
+    pointer-events: none; /* Ensures clicks pass through */
+}
+
+.free-space.marked .star-background {
+    opacity: 1;
+    transform: rotateY(0deg) rotateX(0deg) scale(1.05); /* Animation when marked */
+}
+
+/* Add hover effect */
+.free-space:hover .star-background {
+    transform: rotateY(15deg) rotateX(15deg) scale(1.02);
+}
+
+.free-space .cell-content * {
+    pointer-events: none; /* Prevents SVG and text from capturing clicks */
+}
+
+.bingo-cell.marked {
+    background-color: rgba(255, 215, 0, 0.2);
+    border-color: #FFD700;
+}
+
+.bingo-cell.marked .cell-content {
+    transform: scale(0.95); /* Slight shrink effect */
+}
+
+.bingo-cell.winner {
+    background-color: rgba(76, 175, 80, 0.3);
+    border-color: #4CAF50;
+    animation: winPulse 1s forwards;
+}
+
+/* Winner celebration animation */
+@keyframes winPulse {
+    0% {
+        transform: scale(1);
+        background-color: rgba(76, 175, 80, 0.1);
+    }
+    50% {
+        transform: scale(1.05);
+        background-color: rgba(76, 175, 80, 0.3);
+    }
+    100% {
+        transform: scale(1);
+        background-color: rgba(76, 175, 80, 0.2);
+    }
+}
+
+.cell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    padding: 5px;
+    transition: transform 0.3s ease;
+}
+
+/* Keep your existing FREE space styles */
+.free-space .cell-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+}
+
+.free-space .cell-content * {
+    pointer-events: none;
+}
+
+/* Add hover effect */
+.bingo-cell:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Active click state */
+.bingo-cell:active {
+    transform: scale(0.98);
+}
+
+.bingo-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 4rem;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.bingo-message.show {
+    animation: bingoAppear 1.5s ease-out forwards;
+}
+
+@keyframes bingoAppear {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+}
+
+/* Make text more readable on colored backgrounds */
+.cell-text {
+    color: #333;
+    font-weight: 500;
+    text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
 }
