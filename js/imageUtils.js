@@ -9,6 +9,10 @@ window.clearImageCache = function() {
 
 async function getImageUrlFromDescription(description) {
     console.log('Getting image for:', description);
+    console.log('Environment check in imageUtils:', {
+        windowEnv: !!window.env,
+        pixabayKey: window.env?.PIXABAY_API_KEY ? 'exists' : 'missing'
+    });
 
     try {
         // Clean up the description
@@ -22,11 +26,11 @@ async function getImageUrlFromDescription(description) {
             return window.imageCache.get(searchTerm);
         }
 
-        // Get API key from env.js
+        // Get API key - check window.env first (development)
         const apiKey = window.env?.PIXABAY_API_KEY;
 
         if (!apiKey) {
-            console.error('Pixabay API key not found');
+            console.error('Pixabay API key not found. Check if env.js is loaded properly.');
             return null;
         }
 

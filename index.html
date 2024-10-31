@@ -13,6 +13,26 @@
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" type="image/png" href="favicon.png">
+
+    <!-- Load env.js first -->
+    <script src="env.js"></script>
+
+    <!-- Add debug logging -->
+    <script>
+        console.log('Environment check:', {
+            envExists: !!window.env,
+            pixabayKey: window.env?.PIXABAY_API_KEY ? 'exists' : 'missing',
+            groqKey: window.env?.GROQ_API_KEY ? 'exists' : 'missing'
+        });
+    </script>
+
+    <!-- Other scripts -->
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/imageUtils.js"></script>
+    <script src="js/celebration.js"></script>
+    <script src="js/bingo.js"></script>
+    <script src="js/board.js"></script>
 </head>
 <body>
     <header>
@@ -36,15 +56,6 @@
     <footer>
         <p>© 2024 Bible Bingo by Stephen Swan - Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" target="_blank" rel="license noopener noreferrer">GNU GPL v3</a></p>
     </footer>
-
-    <!-- Load scripts in correct order -->
-    <script src="env.js"></script>
-    <script src="config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/imageUtils.js"></script>
-    <script src="js/celebration.js"></script>
-    <script src="js/bingo.js"></script>
-    <script src="js/board.js"></script>
 
     <!-- Initialize -->
     <script>

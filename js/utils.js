@@ -176,7 +176,7 @@ const fallbackTopics = [
 async function getSermonTopics(reference) {
     console.log('Getting topics for reference:', reference);
 
-    // Get API key from env.js or Azure environment
+    // Get API key from window.env (development)
     const apiKey = window.env?.GROQ_API_KEY;
 
     if (!apiKey) {
