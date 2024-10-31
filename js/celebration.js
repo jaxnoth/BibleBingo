@@ -61,62 +61,38 @@ function celebrateFullBoard() {
 /**
  * Create a single confetti piece
  */
-function createConfetti() {
+function createConfetti(color) {
     const confetti = document.createElement('div');
     confetti.className = 'confetti';
 
-    // Random starting position
-    const startX = 50; // Start from center
-    const startY = 50; // Start from center
+    // Start from center of viewport
+    confetti.style.top = '50%';
+    confetti.style.left = '50%';
 
-    // Random angle and distance for burst effect
-    const angle = Math.random() * Math.PI * 2;
-    const velocity = 15 + Math.random() * 15;
-    const rotationSpeed = (Math.random() - 0.5) * 720;
+    // Calculate random final position
+    const angle = Math.random() * Math.PI * 2; // Random angle in radians
+    const distance = 200 + Math.random() * 300; // Random distance (200-500px)
 
-    // Set initial position
-    confetti.style.left = `${startX}%`;
-    confetti.style.top = `${startY}%`;
+    // Calculate final position using trigonometry
+    const finalX = Math.cos(angle) * distance;
+    const finalY = Math.sin(angle) * distance;
+    const rotation = Math.random() * 720 - 360; // Random rotation -360° to 360°
 
-    // Random color
-    const colors = [
-        '#ff0000', '#00ff00', '#0000ff',
-        '#ffff00', '#ff00ff', '#00ffff',
-        '#ffa500', '#800080', '#ffc0cb'
-    ];
-    confetti.style.backgroundColor = getRandomItem(colors);
+    // Set CSS variables for the animation
+    confetti.style.setProperty('--final-x', `${finalX}px`);
+    confetti.style.setProperty('--final-y', `${finalY}px`);
+    confetti.style.setProperty('--rotation', `${rotation}deg`);
+
+    // Set other styles
+    confetti.style.backgroundColor = color;
+    confetti.style.opacity = Math.random() * 0.7 + 0.3;
 
     document.body.appendChild(confetti);
 
-    // Animate using requestAnimationFrame
-    let startTime = performance.now();
-    const duration = 1000 + Math.random() * 1000; // Random duration between 1-2s
-
-    function animate(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = elapsed / duration;
-
-        if (progress < 1) {
-            // Calculate position based on burst pattern
-            const distance = velocity * progress * 50;
-            const x = startX + (Math.cos(angle) * distance);
-            const y = startY + (Math.sin(angle) * distance) + (progress * progress * 200);
-
-            // Update position and rotation
-            confetti.style.transform = `
-                translate(${x - startX}%, ${y - startY}%)
-                rotate(${rotationSpeed * progress}deg)
-                scale(${1 - progress * 0.5})`;
-
-            confetti.style.opacity = 1 - progress;
-
-            requestAnimationFrame(animate);
-        } else {
-            confetti.remove();
-        }
-    }
-
-    requestAnimationFrame(animate);
+    // Remove confetti after animation
+    setTimeout(() => {
+        confetti.remove();
+    }, 2000);
 }
 
 /**
@@ -240,65 +216,47 @@ window.celebrateWin = function() {
     const bingoMessage = document.getElementById('bingoMessage');
     if (bingoMessage) {
         bingoMessage.textContent = 'BINGO!';
-        bingoMessage.classList.remove('show'); // Reset animation
-        void bingoMessage.offsetWidth; // Force reflow
-        bingoMessage.classList.add('show');
-    }
-
-    // Create confetti
-    const colors = ['#ffd700', '#ff0000', '#00ff00', '#0000ff', '#ff00ff'];
-    const confettiCount = 50;
-
-    for (let i = 0; i < confettiCount; i++) {
-        createConfetti(colors[Math.floor(Math.random() * colors.length)]);
-    }
-}
-
-function createConfetti(color) {
-    const confetti = document.createElement('div');
-    confetti.className = 'confetti';
-    confetti.style.backgroundColor = color;
-    confetti.style.left = Math.random() * 100 + 'vw';
-    confetti.style.animationDuration = (Math.random() * 2 + 1) + 's'; // Reduced duration
-    confetti.style.opacity = Math.random();
-
-    document.body.appendChild(confetti);
-
-    // Remove confetti sooner
-    setTimeout(() => {
-        confetti.remove();
-    }, 2000); // Reduced from 5000
-}
-
-function playWinSound() {
-    const audio = new Audio('sounds/win.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(e => console.log('Sound autoplay blocked'));
-}
-
-window.celebrateSuperBingo = function() {
-    console.log('SUPER BINGO!');
-
-    // Show SUPER BINGO! message
-    const bingoMessage = document.getElementById('bingoMessage');
-    if (bingoMessage) {
-        bingoMessage.textContent = 'SUPER BINGO!';
-        bingoMessage.style.color = '#FFD700'; // Golden color
-        bingoMessage.style.fontSize = '5rem';  // Bigger text
         bingoMessage.classList.remove('show');
         void bingoMessage.offsetWidth;
         bingoMessage.classList.add('show');
     }
 
-    // Create extra confetti for super bingo
-    const colors = ['#ffd700', '#ffd700', '#ff0000', '#00ff00', '#0000ff']; // More gold
-    const confettiCount = 200; // Extra confetti
+    // Create confetti in waves
+    const colors = ['#ffd700', '#ff0000', '#00ff00', '#0000ff', '#ff00ff'];
+    const confettiCount = 50;
 
+    // Create confetti in multiple waves for better effect
     for (let i = 0; i < confettiCount; i++) {
-        createConfetti(colors[Math.floor(Math.random() * colors.length)]);
+        setTimeout(() => {
+            createConfetti(colors[Math.floor(Math.random() * colors.length)]);
+        }, i * 20); // Stagger the creation
+    }
+};
+
+window.celebrateSuperBingo = function() {
+    console.log('SUPER BINGO!');
+
+    const bingoMessage = document.getElementById('bingoMessage');
+    if (bingoMessage) {
+        bingoMessage.textContent = 'SUPER BINGO!';
+        bingoMessage.style.color = '#FFD700';
+        bingoMessage.style.fontSize = '5rem';
+        bingoMessage.classList.remove('show');
+        void bingoMessage.offsetWidth;
+        bingoMessage.classList.add('show');
     }
 
-    // Reset message style after animation
+    // More confetti for super bingo
+    const colors = ['#ffd700', '#ffd700', '#ff0000', '#00ff00', '#0000ff'];
+    const confettiCount = 200;
+
+    // Create confetti in multiple waves
+    for (let i = 0; i < confettiCount; i++) {
+        setTimeout(() => {
+            createConfetti(colors[Math.floor(Math.random() * colors.length)]);
+        }, i * 10); // Faster waves for super bingo
+    }
+
     setTimeout(() => {
         if (bingoMessage) {
             bingoMessage.style.color = '';
@@ -306,3 +264,9 @@ window.celebrateSuperBingo = function() {
         }
     }, 2000);
 };
+
+function playWinSound() {
+    const audio = new Audio('sounds/win.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log('Sound autoplay blocked'));
+}

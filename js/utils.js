@@ -176,11 +176,11 @@ const fallbackTopics = [
 async function getSermonTopics(reference) {
     console.log('Getting topics for reference:', reference);
 
-    // Get API key from either env.js (local) or environment variables (production)
-    const apiKey = window.env?.GROQ_API_KEY || process.env.GROQ_API_KEY;
+    // Get API key from env.js or Azure environment
+    const apiKey = window.env?.GROQ_API_KEY;
 
     if (!apiKey) {
-        console.log('GROQ API key not found in environment or env.js, using default topics');
+        console.log('GROQ API key not found, using default topics');
         return shuffleArray([...fallbackTopics]);
     }
 

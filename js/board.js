@@ -3,44 +3,28 @@ console.log('board.js loaded');
 const BOARD_SIZE = 5;
 const FREE_SPACE_INDEX = 12;
 
+let isGenerating = false;
+
 async function generateBingo() {
-    console.log('Generating bingo board...');
-
-    // Get references to input and button
-    const input = document.getElementById('bibleReference');
-    const button = document.querySelector('.input-group button');
-    const bingoCard = document.getElementById('bingoCard');
-    const loadingMessage = document.querySelector('.loading');
-
-    if (loadingMessage) {
-        loadingMessage.remove();
-    }
-
-    if (!input || !button || !bingoCard) {
-        console.error('Could not find required elements');
+    if (isGenerating) {
+        console.log('Already generating a board, please wait...');
         return;
     }
 
     try {
-        // Disable input and button while generating
-        input.disabled = true;
-        button.disabled = true;
+        isGenerating = true;
+        console.log('Generating bingo board...');
 
-        // Show loading message in the bingo card area
-        bingoCard.innerHTML = '<div class="loading">Generating Card...</div>';
+        // Clear image cache before generating new board
+        window.clearImageCache();
 
-        const reference = input.value.trim();
-        const topics = await getSermonTopics(reference);
-
+        const topics = await getSermonTopics();
         await createBoard(topics);
 
     } catch (error) {
         console.error('Error generating bingo:', error);
-        bingoCard.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
-        // Re-enable input and button
-        if (input) input.disabled = false;
-        if (button) button.disabled = false;
+        isGenerating = false;
     }
 }
 
@@ -53,21 +37,22 @@ async function createBoard(topics) {
         return;
     }
 
-    // Clear any existing content
+    // Clear any existing content and remove any existing event listeners
     bingoCard.innerHTML = '';
 
     // Reset bingo states for new board
     resetBingoStates();
 
-    // Create cells
-    const shuffledTopics = shuffleArray([...topics]); // Create a copy before shuffling
-    let cellIndex = 0;
+    // Ensure exactly 24 topics (25th space is FREE)
+    const shuffledTopics = shuffleArray([...topics]).slice(0, 24);
+    let topicIndex = 0;
 
+    // Create exactly 25 cells (5x5 grid)
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.className = 'bingo-cell';
 
-        // Center cell is always FREE
+        // Center cell (index 12) is always FREE
         if (i === 12) {
             cell.innerHTML = `
                 <div class="cell-content free-space-content">
@@ -98,20 +83,29 @@ async function createBoard(topics) {
             `;
             cell.classList.add('free-space', 'marked');
         } else {
-            const topic = shuffledTopics[cellIndex];
-            if (topic) {
-                const imageUrl = await getImageUrlFromDescription(topic.imageDescription);
-                cell.innerHTML = `
-                    <div class="cell-content">
-                        ${imageUrl ? `<img src="${imageUrl}" alt="${topic.imageDescription}">` : ''}
-                        <span class="cell-text">${topic.word}</span>
-                    </div>
-                `;
-                cellIndex++;
+            if (topicIndex < shuffledTopics.length) {
+                const topic = shuffledTopics[topicIndex++];
+                if (topic) {
+                    const imageUrl = await getImageUrlFromDescription(topic.imageDescription);
+
+                    // Set background image directly on the cell
+                    if (imageUrl) {
+                        cell.style.backgroundImage = `url('${imageUrl}')`;
+                    }
+
+                    cell.innerHTML = `
+                        <div class="cell-content">
+                            <span class="cell-text">${topic.word}</span>
+                        </div>
+                    `;
+                }
             }
         }
 
-        cell.addEventListener('click', () => toggleCell(cell));
+        cell.addEventListener('click', function() {
+            toggleCell(this);
+        });
+
         bingoCard.appendChild(cell);
     }
 }
