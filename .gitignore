@@ -1,16 +1,14 @@
-# Environment and config files
+# Development only files
 env.js
 .env
 .env.local
-.env.development
-.env.production
-config.local.js
 
-# IDE and Editor files
+# IDE/Editor files
 .vscode/
 .idea/
 *.swp
-*.swo
+
+# OS files
 .DS_Store
 Thumbs.db
 

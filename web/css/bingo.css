@@ -6,7 +6,8 @@
     gap: 10px;
     padding: 10px;
     width: 100%;
-    max-width: 800px;
+    max-width: calc(min(100vw -52px,100vw - 350px));
+    max-height: calc(min(100vw - 52px,100vw - 350px));
     margin: 0 auto;
     aspect-ratio: 1;
 }

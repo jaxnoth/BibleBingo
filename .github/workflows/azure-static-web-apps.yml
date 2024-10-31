@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Generate env.js file
+      # Generate env.js file in web/js directory
       - name: Generate env.js
         run: |
-          echo "window.env = {" > js/env.js
-          echo "  PIXABAY_API_KEY: '${{ secrets.PIXABAY_API_KEY }}'," >> js/env.js
-          echo "  GROQ_API_KEY: '${{ secrets.GROQ_API_KEY }}'" >> js/env.js
-          echo "};" >> js/env.js
+          echo "window.env = {" > web/js/env.js
+          echo "  PIXABAY_API_KEY: '${{ secrets.PIXABAY_API_KEY }}'," >> web/js/env.js
+          echo "  GROQ_API_KEY: '${{ secrets.GROQ_API_KEY }}'" >> web/js/env.js
+          echo "};" >> web/js/env.js
 
       - name: Build And Deploy
         id: builddeploy
@@ -34,7 +34,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "/"
+          app_location: "/web"  # Updated to point to web folder
           skip_app_build: true
           output_location: ""
 
