@@ -134,3 +134,100 @@ async function playSound() {
         }
     }
 }
+
+/**
+ * Cleanup any existing celebrations before starting new ones
+ */
+function cleanupExistingCelebrations() {
+    const existingContainer = document.getElementById('confetti-container');
+    if (existingContainer) existingContainer.remove();
+
+    const existingMessage = document.querySelector('.celebration-message');
+    if (existingMessage) existingMessage.remove();
+}
+
+/**
+ * Start a celebration
+ */
+function startCelebration() {
+    cleanupExistingCelebrations();
+    console.log('Starting celebration');
+
+    // Create confetti container if it doesn't exist
+    let confettiContainer = document.getElementById('confetti-container');
+    if (!confettiContainer) {
+        confettiContainer = document.createElement('div');
+        confettiContainer.id = 'confetti-container';
+        document.body.appendChild(confettiContainer);
+    }
+
+    // Clear any existing confetti
+    confettiContainer.innerHTML = '';
+
+    // Create confetti pieces
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.setProperty('--delay', `${Math.random() * 5}s`);
+        confetti.style.setProperty('--rotation', `${Math.random() * 360}deg`);
+        confetti.style.setProperty('--x', `${Math.random() * 100}vw`);
+        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
+        confettiContainer.appendChild(confetti);
+    }
+
+    // Show celebration message
+    const message = document.createElement('div');
+    message.className = 'celebration-message';
+    message.textContent = 'BINGO!';
+    document.body.appendChild(message);
+
+    // Remove celebration after animation
+    setTimeout(() => {
+        confettiContainer.remove();
+        message.remove();
+    }, 5000);
+}
+
+function startSuperCelebration() {
+    cleanupExistingCelebrations();
+    console.log('Starting super celebration');
+
+    // Create more confetti
+    let confettiContainer = document.getElementById('confetti-container');
+    if (!confettiContainer) {
+        confettiContainer = document.createElement('div');
+        confettiContainer.id = 'confetti-container';
+        document.body.appendChild(confettiContainer);
+    }
+
+    confettiContainer.innerHTML = '';
+
+    // Create lots of golden confetti
+    for (let i = 0; i < 200; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti super-confetti';
+        confetti.style.setProperty('--delay', `${Math.random() * 5}s`);
+        confetti.style.setProperty('--rotation', `${Math.random() * 360}deg`);
+        confetti.style.setProperty('--x', `${Math.random() * 100}vw`);
+        // Golden colors
+        confetti.style.backgroundColor = `hsl(${40 + Math.random() * 20}, 100%, ${50 + Math.random() * 20}%)`;
+        confettiContainer.appendChild(confetti);
+    }
+
+    // Show super celebration message
+    const message = document.createElement('div');
+    message.className = 'celebration-message super';
+    message.textContent = 'SUPER BINGO!';
+    message.style.color = 'gold';
+    message.style.fontSize = '5rem';
+    document.body.appendChild(message);
+
+    // Remove celebration after animation
+    setTimeout(() => {
+        confettiContainer.remove();
+        message.remove();
+    }, 6000);
+}
+
+// Cleanup on page unload
+window.addEventListener('unload', cleanupExistingCelebrations);

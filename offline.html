@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Bible Bingo</title>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .offline-container {
+            text-align: center;
+            padding: var(--spacing-xl);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-lg);
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Bible Bingo</h1>
+    </header>
+
+    <main class="container">
+        <div class="offline-container">
+            <div class="offline-icon">📡</div>
+            <h2>You're Offline</h2>
+            <p>Please check your internet connection and try again.</p>
+            <button onclick="window.location.reload()">Try Again</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Bible Bingo</p>
+    </footer>
+</body>
+</html>

@@ -1,74 +1,133 @@
 // Global variables for image handling
-const imageCache = new Map();
 const usedImages = new Set();
 
 // Cache duration and retry settings
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-class ImageCache {
-    constructor() {
-        this.cache = new Map();
-        this.loadFromStorage();
-    }
+// First, check if imageCache already exists
+if (typeof window.imageCache === 'undefined') {
+    class ImageCache {
+        constructor() {
+            this.cache = new Map();
+            this.maxSize = 100; // Maximum number of cached items
+            this.loadFromStorage();
+        }
 
-    loadFromStorage() {
-        try {
-            const stored = localStorage.getItem('imageCache');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                Object.entries(parsed).forEach(([key, entry]) => {
-                    if (Date.now() - entry.timestamp < CACHE_DURATION) {
-                        this.cache.set(key, entry.urls);
-                    }
-                });
+        loadFromStorage() {
+            try {
+                const stored = localStorage.getItem('imageCache');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    Object.entries(parsed).forEach(([key, entry]) => {
+                        if (Date.now() - entry.timestamp < 24 * 60 * 60 * 1000) {
+                            // Handle both old and new format
+                            const url = entry.urls ? entry.urls[0] : entry.url;
+                            if (url) {
+                                this.cache.set(key, url);
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.log('Failed to load image cache:', error);
+                localStorage.removeItem('imageCache');
+                this.cache.clear();
             }
-        } catch (error) {
-            console.log('Failed to load image cache:', error);
+        }
+
+        saveToStorage() {
+            try {
+                const toStore = {};
+                this.cache.forEach((url, key) => {
+                    toStore[key] = {
+                        url: url,
+                        timestamp: Date.now()
+                    };
+                });
+                localStorage.setItem('imageCache', JSON.stringify(toStore));
+            } catch (error) {
+                console.log('Failed to save image cache:', error);
+            }
+        }
+
+        set(key, url) {
+            if (!url) return;
+            if (this.cache.size >= this.maxSize) {
+                const oldestKey = this.cache.keys().next().value;
+                this.cache.delete(oldestKey);
+            }
+            this.cache.set(key, url);
+            this.saveToStorage();
+        }
+
+        get(key) {
+            return this.cache.get(key);
+        }
+
+        has(key) {
+            return this.cache.has(key) && this.cache.get(key) != null;
+        }
+
+        clear() {
+            this.cache.clear();
+            localStorage.removeItem('imageCache');
+            console.log('Cache cleared');
         }
     }
 
-    set(key, value) {
-        const urls = this.cache.get(key) || [];
-        if (!urls.includes(value)) {
-            urls.push(value);
-            this.cache.set(key, urls);
+    // Clear existing cache to reset the format
+    if (window.imageCache) {
+        window.imageCache.clear();
+    }
+
+    // Initialize cache
+    window.imageCache = new ImageCache();
+}
+
+// Use the global imageCache instance
+async function getImageUrlFromDescription(description) {
+    console.log('Getting image for:', description);
+
+    try {
+        // Clean up the description
+        const searchTerm = description.toLowerCase()
+            .replace(/[^\w\s]/g, '')
+            .trim();
+
+        // Check cache first
+        if (window.imageCache.has(searchTerm)) {
+            console.log('Cache hit for:', searchTerm);
+            const urls = window.imageCache.get(searchTerm);
+            // Return the first valid URL from cache
+            return Array.isArray(urls) ? urls[0] : urls;
         }
 
-        try {
-            const cacheObject = {};
-            this.cache.forEach((urls, key) => {
-                cacheObject[key] = {
-                    urls: urls,
-                    timestamp: Date.now()
-                };
-            });
-            localStorage.setItem('imageCache', JSON.stringify(cacheObject));
-        } catch (error) {
-            console.log('Failed to save image cache:', error);
+        console.log('Fetching from Pixabay:', searchTerm);
+        const response = await fetch(`https://pixabay.com/api/?key=${config.PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
+
+        if (!response.ok) {
+            throw new Error(`Pixabay API error: ${response.status}`);
         }
-    }
 
-    get(key) {
-        const urls = this.cache.get(key);
-        if (!urls || urls.length === 0) return null;
+        const data = await response.json();
 
-        const unusedUrls = urls.filter(url => !usedImages.has(url));
-        if (unusedUrls.length === 0) return null;
+        if (data.hits && data.hits.length > 0) {
+            // Store only the first URL in cache
+            const imageUrl = data.hits[0].webformatURL;
+            window.imageCache.set(searchTerm, imageUrl);
+            return imageUrl;
+        } else {
+            throw new Error('No images found');
+        }
 
-        return unusedUrls[Math.floor(Math.random() * unusedUrls.length)];
-    }
-
-    has(key) {
-        const urls = this.cache.get(key);
-        if (!urls || urls.length === 0) return false;
-        return urls.some(url => !usedImages.has(url));
-    }
-
-    clear() {
-        this.cache.clear();
-        localStorage.removeItem('imageCache');
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        return null;
     }
 }
+
+// Export the function
+window.getImageUrlFromDescription = getImageUrlFromDescription;
 
 function resetUsedImages() {
     usedImages.clear();

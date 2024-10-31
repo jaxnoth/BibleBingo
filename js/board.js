@@ -1,285 +1,131 @@
-/**
- * Generate a new bingo board
- */
+console.log('board.js loaded');
+
+const BOARD_SIZE = 5;
+const FREE_SPACE_INDEX = 12;
+
 async function generateBingo() {
-    console.log('Starting generateBingo');
+    console.log('generateBingo called');
+
+    const reference = document.getElementById('bibleReference').value;
+    const button = document.getElementById('generateButton');
+    const loader = document.getElementById('loader');
+    const bingoCard = document.getElementById('bingoCard');
+
+    console.log('Starting generation for reference:', reference);
+
     try {
-        celebratedLines.clear();
-        const reference = document.getElementById('bibleReference').value;
+        // Show loading state
+        button.disabled = true;
+        loader.style.display = 'flex';
+        bingoCard.innerHTML = '';
 
-        let topics;
-        if (!reference.trim()) {
-            console.log('No reference, using local generation');
-            topics = await generateLocalBingoCard();
-        } else {
-            try {
-                console.log('Using reference:', reference);
-                topics = await getSermonTopics(reference);
-                topics[12] = { word: 'FREE', imageDescription: 'star' };
-            } catch (aiError) {
-                console.log('AI failed, falling back to local');
-                topics = await generateLocalBingoCard();
-            }
-        }
+        // Get topics from API
+        const topics = await getSermonTopics(reference);
+        console.log(`Generated ${topics.length} topics`);
 
-        console.log('Got topics:', topics);
-        await createBingoCard(topics);
+        // Create the board
+        await createBoard(topics);
         console.log('Board created');
+
     } catch (error) {
-        console.error('Fatal error in generateBingo:', error);
-        showError('Error generating bingo card. Please try again.');
+        console.error('Error generating bingo:', error);
+        alert(error.message);
+    } finally {
+        button.disabled = false;
+        loader.style.display = 'none';
     }
 }
 
-/**
- * Generate a local bingo card with predefined words
- * @returns {Array} Array of topic objects
- */
-async function generateLocalBingoCard() {
-    log('Generating local bingo card');
-
-    // Create a Set to track used words
-    const usedWords = new Set();
-    const finalWords = [];
-
-    // Combine all available words that have images
-    const allWords = Object.values(wordLists).flat()
-        .filter(word => imageDescriptions[word])
-        .filter(word => word !== 'FREE');
-
-    log(`Total available words with images: ${allWords.length}`);
-
-    // Shuffle all words
-    const shuffledWords = shuffleArray(allWords);
-
-    // Select first 24 unique words
-    for (let i = 0; i < shuffledWords.length && finalWords.length < 24; i++) {
-        const word = shuffledWords[i];
-        if (!usedWords.has(word)) {
-            usedWords.add(word);
-            finalWords.push(word);
-        }
-    }
-
-    // If we don't have enough words, add from fallback list
-    while (finalWords.length < 24) {
-        const fallbackWord = getRandomItem(fallbackWords);
-        if (!usedWords.has(fallbackWord)) {
-            usedWords.add(fallbackWord);
-            finalWords.push(fallbackWord);
-        }
-    }
-
-    // Create the final array with FREE in the middle
-    const result = [];
-    for (let i = 0; i < 25; i++) {
-        if (i === 12) {
-            result.push({ word: 'FREE', imageDescription: 'star' });
-        } else if (i < 12) {
-            result.push({
-                word: finalWords[i],
-                imageDescription: imageDescriptions[finalWords[i]]
-            });
-        } else {
-            result.push({
-                word: finalWords[i - 1],
-                imageDescription: imageDescriptions[finalWords[i - 1]]
-            });
-        }
-    }
-
-    log('Final word list generated:', result);
-    return result;
-}
-
-/**
- * Get sermon topics from AI
- * @param {string} reference - Bible reference
- * @returns {Promise<Array>} Array of topic objects
- */
-async function getSermonTopics(reference) {
-    const prompt = `Given the Bible reference "${reference}", create a list of 24 single words related to its themes and message. These should be simple, clear words suitable for a Bible study bingo game. Include a mix of:
-    - Key actions or verbs from the passage
-    - Important objects or symbols mentioned
-    - Themes or concepts discussed
-    - Character traits demonstrated
-    Format each word with a relevant image description. Format the response as a JSON array where each element has 'word' and 'imageDescription' properties. The image descriptions should be simple terms like: cross, bible, heart, star, angel, church, dove, fish, crown, light, water, bread, lamb, scroll.
-    Don't use any number related words.
-    Example format:
-    [
-        {"word": "PRAY", "imageDescription": "pray"},
-        {"word": "FAITH", "imageDescription": "cross"}
-    ]`;
-
-    try {
-        log('Making API request to Groq...');
-
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${config.GROQ_API_KEY}`,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                model: "mixtral-8x7b-32768",
-                messages: [{
-                    role: "user",
-                    content: prompt
-                }],
-                temperature: 0.7,
-                max_tokens: 1000
-            })
-        });
-
-        if (response.status === 401) {
-            console.error('Authentication failed. Please check your Groq API key.');
-            throw new Error('Invalid API key. Please check your configuration.');
-        }
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('API Error Details:', errorData);
-            throw new Error(`API error: ${response.status} - ${JSON.stringify(errorData)}`);
-        }
-
-        const data = await response.json();
-        log('Successful response from Groq');
-        log('Raw response content:', data.choices[0].message.content);
-
-        const content = data.choices[0].message.content;
-        let wordList;
-        try {
-            wordList = JSON.parse(content);
-        } catch (e) {
-            console.error('Failed to parse JSON response:', e);
-            return content.split('\n').filter(line => line.trim()).slice(0, 24).map(word => ({
-                word: word.trim().toUpperCase(),
-                imageDescription: normalizeDescription(word.trim())
-            }));
-        }
-
-        // Get 24 topics and normalize their descriptions
-        const topics = wordList.slice(0, 24).map(topic => ({
-            word: topic.word.toUpperCase(),
-            imageDescription: normalizeDescription(topic.imageDescription)
-        }));
-
-        // Create the final array with FREE in the middle
-        const finalTopics = [
-            ...topics.slice(0, 12),
-            { word: 'FREE', imageDescription: 'star' },
-            ...topics.slice(12)
-        ];
-
-        return finalTopics;
-    } catch (error) {
-        console.error('Detailed error:', error);
-        return generateLocalBingoCard();
-    }
-}
-
-/**
- * Create the bingo card in the DOM
- * @param {Array} topics - Array of topic objects
- */
-async function createBingoCard(topics) {
-    log('Creating bingo card with topics:', topics);
-
+async function createBoard(topics) {
+    console.log('Creating board...');
     const bingoCard = document.getElementById('bingoCard');
     bingoCard.innerHTML = '';
 
-    // Verify we have exactly 25 topics
-    if (topics.length !== 25) {
-        console.error(`Invalid number of topics: ${topics.length}`);
-        const usedFallbacks = new Set();
+    // Reset bingo states for new board
+    resetBingoStates();
 
-        while (topics.length < 25) {
-            const availableFallbacks = fallbackWords.filter(word => !usedFallbacks.has(word));
-
-            if (availableFallbacks.length === 0) {
-                usedFallbacks.clear();
-            }
-
-            const fallbackWord = getRandomItem(availableFallbacks);
-            topics.push({
-                word: fallbackWord,
-                imageDescription: imageDescriptions[fallbackWord]
-            });
-
-            usedFallbacks.add(fallbackWord);
+    // Function to generate a consistent color from text
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
         }
-        topics = topics.slice(0, 25);
+        // Generate pastel colors for better text visibility
+        const hue = hash % 360;
+        return `hsl(${hue}, 70%, 85%)`; // Pastel version
     }
 
-    // Create all cells
-    topics.forEach((topic, index) => {
-        const cell = createBingoCell(topic, index);
-        bingoCard.appendChild(cell);
-    });
-}
+    // Shuffle the topics
+    const shuffledTopics = [...topics].sort(() => Math.random() - 0.5);
 
-/**
- * Create a single bingo cell
- * @param {Object} topic - Topic object with word and imageDescription
- * @param {number} index - Cell index (0-24)
- * @returns {HTMLElement} The created cell element
- */
-function createBingoCell(topic, index) {
-    const cell = document.createElement('div');
-    cell.className = 'bingo-cell loading';
+    // Create a 5x5 grid
+    for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'bingo-cell';
 
-    // Create background image container
-    const bgImage = document.createElement('div');
-    bgImage.className = 'background-image';
+        // Add FREE space in the middle
+        if (i === FREE_SPACE_INDEX) {
+            cell.classList.add('free-space');
 
-    // Create image element
-    const img = document.createElement('img');
-    img.className = 'cell-image';
+            // Add star SVG
+            const starSvg = `
+                <svg viewBox="0 0 51 48" class="star-icon">
+                    <path d="M25.5 0L31.4 18.3H50.5L35 29.6L40.9 47.9L25.5 36.6L10.1 47.9L16 29.6L0.5 18.3H19.6L25.5 0Z"
+                          fill="currentColor"/>
+                </svg>
+            `;
+            cell.innerHTML = starSvg + '<span>FREE</span>';
+        } else {
+            // Get topic from shuffled array, accounting for FREE space
+            const topicIndex = i > FREE_SPACE_INDEX ? i - 1 : i;
+            const topic = shuffledTopics[topicIndex];
 
-    // Create text element
-    const textSpan = document.createElement('span');
-    textSpan.className = 'word-text';
-    textSpan.textContent = topic.word;
+            // Set a background color based on the word
+            const backgroundColor = stringToColor(topic.word);
+            cell.style.backgroundColor = backgroundColor;
 
-    // Handle FREE space
-    if (index === 12) {
-        img.src = 'https://cdn.pixabay.com/photo/2013/07/12/17/39/star-152151_150.png';
-        img.alt = 'FREE';
-        img.className = 'cell-image free-space-image';
-        bgImage.appendChild(img);
-
-        cell.classList.add('free-space');
-        cell.classList.remove('loading');
-        cell.classList.add('marked');
-
-        const checkMark = document.createElement('span');
-        checkMark.className = 'check-mark';
-        checkMark.innerHTML = '✔';
-        cell.appendChild(checkMark);
-    } else {
-        // Load image for regular cells
-        getImageUrlFromDescription(topic.imageDescription)
-            .then(imageUrl => {
+            try {
+                const imageUrl = await getImageUrlFromDescription(topic.imageDescription);
                 if (imageUrl) {
+                    const img = document.createElement('img');
                     img.src = imageUrl;
                     img.alt = topic.word;
-                    bgImage.appendChild(img);
+                    img.onerror = () => {
+                        img.style.display = 'none'; // Hide broken image
+                        cell.style.backgroundColor = backgroundColor; // Ensure background color is visible
+                    };
+                    cell.appendChild(img);
                 }
-                cell.classList.remove('loading');
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error loading image:', error);
-                cell.classList.remove('loading');
-            });
+                // Background color will show as fallback
+            }
+
+            const text = document.createElement('span');
+            text.textContent = topic.word;
+            cell.appendChild(text);
+        }
+
+        cell.onclick = () => {
+            cell.classList.toggle('selected');
+            console.log('Cell clicked:', cell.textContent);
+            checkForBingo();
+        };
+
+        bingoCard.appendChild(cell);
     }
-
-    // Add click handler
-    cell.addEventListener('click', () => handleCellClick(cell));
-
-    // Assemble cell
-    cell.appendChild(bgImage);
-    cell.appendChild(textSpan);
-
-    return cell;
 }
+
+// Add window resize handler for responsive layout
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    // Debounce resize events
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        const bingoCard = document.getElementById('bingoCard');
+        if (bingoCard) {
+            // Adjust layout if needed
+            console.log('Window resized, adjusting layout');
+        }
+    }, 250);
+});

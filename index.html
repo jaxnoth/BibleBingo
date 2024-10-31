@@ -2,35 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sermon Bingo</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Bingo</title>
 
-    <!-- Environment variables must come first -->
-    <script src="/env.js"></script>
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/bingo.css">
 
-    <!-- Then config -->
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" type="image/png" href="favicon.png">
+</head>
+<body>
+    <header>
+        <h1>Bible Bingo</h1>
+    </header>
+
+    <main class="container">
+        <section class="input-section">
+            <form id="referenceForm">
+                <div class="input-group">
+                    <label for="bibleReference">Bible Reference:</label>
+                    <input type="text"
+                           id="bibleReference"
+                           placeholder="e.g., John 3:16"
+                           pattern="[1-3]?\s*[A-Za-z]+\s*\d+:\d+"
+                           required
+                           autocomplete="off"
+                           value="John 3:16">
+                </div>
+                <button type="submit" id="generateButton">Generate Bingo Card</button>
+            </form>
+        </section>
+
+        <section id="bingoCard" class="bingo-card" aria-label="Bingo Card"></section>
+
+        <div id="loader" class="loader" aria-hidden="true">
+            <div class="spinner"></div>
+            <p>Generating card...</p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Bible Bingo</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="env.js"></script>
     <script src="config.js"></script>
-
-    <!-- Then utility files -->
+    <script src="js/utils.js"></script>
     <script src="js/imageUtils.js"></script>
     <script src="js/gameConfig.js"></script>
-    <script src="js/utils.js"></script>
-
-    <!-- Then game files -->
     <script src="js/board.js"></script>
     <script src="js/bingo.js"></script>
     <script src="js/celebration.js"></script>
-</head>
-<body>
-    <div class="container">
-        <h1>Sermon Bingo</h1>
 
-        <div class="input-section">
-            <input type="text" id="bibleReference" placeholder="Enter Bible reference (e.g., John 3:16)">
-            <button onclick="generateBingo()">Generate Bingo Card</button>
-        </div>
+    <!-- Initialize -->
+    <script>
+        // Check for required features and APIs
+        document.addEventListener('DOMContentLoaded', () => {
+            const requirements = {
+                localStorage: !!window.localStorage,
+                fetch: !!window.fetch,
+                grid: CSS.supports('display', 'grid')
+            };
 
-        <div id="bingoCard" class="bingo-card"></div>
-    </div>
+            const missingFeatures = Object.entries(requirements)
+                .filter(([, supported]) => !supported)
+                .map(([feature]) => feature);
+
+            if (missingFeatures.length > 0) {
+                console.warn('Missing required features:', missingFeatures);
+                alert('Your browser might not support all features. The game may not work as expected.');
+            }
+
+            // Initialize game if all critical features are available
+            if (requirements.fetch && requirements.grid) {
+                console.log('Initializing game with all required features');
+                const form = document.getElementById('referenceForm');
+                console.log('Form found:', !!form);
+
+                if (form) {
+                    form.addEventListener('submit', async (event) => {
+                        event.preventDefault();
+                        console.log('Form submitted');
+                        await generateBingo();
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>

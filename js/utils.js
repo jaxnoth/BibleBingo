@@ -114,12 +114,11 @@ function createColoredBackground(description) {
  * @returns {Array} New shuffled array
  */
 function shuffleArray(array) {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
+    for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        [array[i], array[j]] = [array[j], array[i]];
     }
-    return newArray;
+    return array;
 }
 
 /**
@@ -144,4 +143,115 @@ function isElementVisible(element) {
         rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
         rect.right <= (window.innerWidth || document.documentElement.clientWidth)
     );
+}
+
+// Add this fallback data
+const fallbackTopics = [
+    { word: "Love", imageDescription: "heart symbol" },
+    { word: "Faith", imageDescription: "praying hands" },
+    { word: "Hope", imageDescription: "sunrise over mountains" },
+    { word: "Grace", imageDescription: "dove in flight" },
+    { word: "Peace", imageDescription: "olive branch" },
+    { word: "Joy", imageDescription: "smiling face" },
+    { word: "Truth", imageDescription: "open bible" },
+    { word: "Light", imageDescription: "shining candle" },
+    { word: "Life", imageDescription: "growing tree" },
+    { word: "Cross", imageDescription: "wooden cross" },
+    { word: "Prayer", imageDescription: "folded hands" },
+    { word: "Mercy", imageDescription: "helping hands" },
+    { word: "Spirit", imageDescription: "dove flying" },
+    { word: "Word", imageDescription: "open bible pages" },
+    { word: "Saved", imageDescription: "rescue lifeline" },
+    { word: "Believe", imageDescription: "mountain faith" },
+    { word: "Heaven", imageDescription: "clouds and light" },
+    { word: "Glory", imageDescription: "sunburst" },
+    { word: "Praise", imageDescription: "raised hands" },
+    { word: "Holy", imageDescription: "flame" },
+    { word: "Eternal", imageDescription: "infinity symbol" },
+    { word: "Blessed", imageDescription: "rainbow" },
+    { word: "Gospel", imageDescription: "scroll" },
+    { word: "Amen", imageDescription: "praying hands" }
+];
+
+async function getSermonTopics(reference) {
+    console.log('Getting topics for reference:', reference);
+
+    if (!reference || typeof reference !== 'string') {
+        console.error('Invalid reference provided');
+        return shuffleArray([...fallbackTopics]);
+    }
+
+    // Increase timeout and add visual feedback
+    const timeoutDuration = 15000; // 15 seconds
+    let timeoutId;
+
+    try {
+        const result = await Promise.race([
+            // Actual API call
+            fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${config.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: "mixtral-8x7b-32768",
+                    messages: [
+                        {
+                            role: "user",
+                            content: `Generate 24 unique, single-word sermon topics related to Bible verse ${reference}.
+                                Format as JSON array of objects, each with 'word' and 'imageDescription' properties.
+                                Keep words simple and biblical.
+                                Make image descriptions clear and safe for work.
+                                Example format: [{"word": "Love", "imageDescription": "heart symbol"}]`
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    response_format: { type: "json_object" }
+                })
+            }).then(async response => {
+                if (!response.ok) {
+                    throw new Error(`API response not ok: ${response.status}`);
+                }
+                return response.json();
+            }),
+
+            // Timeout promise
+            new Promise((_, reject) => {
+                timeoutId = setTimeout(() => {
+                    reject(new Error('Using fallback topics due to timeout'));
+                }, timeoutDuration);
+            })
+        ]);
+
+        // Clear timeout if API call succeeded
+        clearTimeout(timeoutId);
+
+        const content = result.choices[0].message.content;
+        let topics;
+
+        try {
+            const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
+            topics = parsedContent.sermonTopics || parsedContent;
+
+            if (!Array.isArray(topics) || topics.length < 24) {
+                console.log('Invalid topics format or count, using fallback');
+                return shuffleArray([...fallbackTopics]);
+            }
+
+            return topics;
+
+        } catch (e) {
+            console.error('JSON parse error:', e);
+            return shuffleArray([...fallbackTopics]);
+        }
+
+    } catch (error) {
+        // Clear timeout if it exists
+        if (timeoutId) clearTimeout(timeoutId);
+
+        console.log('Using fallback topics due to error:', error.message);
+        return shuffleArray([...fallbackTopics]);
+    }
 }

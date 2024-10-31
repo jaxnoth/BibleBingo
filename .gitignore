@@ -42,4 +42,4 @@ local.settings.json
 
 # Misc
 *.log
-.DS_Store
+.DS_Storenode_modules/

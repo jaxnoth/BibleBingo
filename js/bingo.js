@@ -5,96 +5,117 @@
 function checkForBingo() {
     const cells = document.querySelectorAll('.bingo-cell');
     const size = 5;
-    let newBingoFound = false;
+    const selected = Array.from(cells).map(cell => cell.classList.contains('selected'));
+    let newBingo = false;
 
-    // Convert cells to 2D array for easier checking
-    const grid = Array(size).fill().map(() => Array(size).fill(null));
-    cells.forEach((cell, index) => {
-        const row = Math.floor(index / size);
-        const col = index % size;
-        grid[row][col] = cell.classList.contains('marked');
+    // Clear existing bingo line classes
+    cells.forEach(cell => {
+        cell.classList.remove('bingo-row', 'bingo-column', 'bingo-diagonal', 'bingo-multiple', 'super-bingo');
     });
 
-    // Clear all bingo-line classes first
-    cells.forEach(cell => cell.classList.remove('bingo-line'));
+    // Check for super bingo (all cells selected)
+    if (selected.every(Boolean)) {
+        cells.forEach(cell => cell.classList.add('super-bingo'));
+        if (!bingoStates.superBingo) {
+            bingoStates.superBingo = true;
+            startSuperCelebration();
+            return true;
+        }
+    } else {
+        bingoStates.superBingo = false;
+    }
 
-    // Check for full board first
-    const isFullBoard = Array.from(cells).every(cell => cell.classList.contains('marked'));
+    // Track cells that are part of bingo lines
+    const bingoCells = new Map(); // cell index -> set of bingo types
 
     // Check rows
-    for (let row = 0; row < size; row++) {
-        const lineKey = `row-${row}`;
-        const isRowComplete = grid[row].every(cell => cell);
+    for (let i = 0; i < size; i++) {
+        const rowComplete = selected.slice(i * size, (i + 1) * size).every(Boolean);
+        if (rowComplete && !bingoStates.rows.has(i)) {
+            bingoStates.rows.add(i);
+            newBingo = true;
+        } else if (!rowComplete && bingoStates.rows.has(i)) {
+            bingoStates.rows.delete(i);
+        }
 
-        if (isRowComplete) {
-            if (!celebratedLines.has(lineKey)) {
-                newBingoFound = true;
-                celebratedLines.add(lineKey);
-                log(`New bingo found in row ${row}`);
-            }
-            // Highlight bingo row
-            for (let col = 0; col < size; col++) {
-                cells[row * size + col].classList.add('bingo-line');
+        if (rowComplete) {
+            for (let j = 0; j < size; j++) {
+                const cellIndex = i * size + j;
+                if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
+                bingoCells.get(cellIndex).add('row');
             }
         }
     }
 
     // Check columns
-    for (let col = 0; col < size; col++) {
-        const lineKey = `col-${col}`;
-        const isColComplete = grid.every(row => row[col]);
+    for (let i = 0; i < size; i++) {
+        const columnComplete = Array.from({length: size}, (_, j) => selected[i + j * size]).every(Boolean);
+        if (columnComplete && !bingoStates.columns.has(i)) {
+            bingoStates.columns.add(i);
+            newBingo = true;
+        } else if (!columnComplete && bingoStates.columns.has(i)) {
+            bingoStates.columns.delete(i);
+        }
 
-        if (isColComplete) {
-            if (!celebratedLines.has(lineKey)) {
-                newBingoFound = true;
-                celebratedLines.add(lineKey);
-                log(`New bingo found in column ${col}`);
+        if (columnComplete) {
+            for (let j = 0; j < size; j++) {
+                const cellIndex = i + j * size;
+                if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
+                bingoCells.get(cellIndex).add('column');
             }
-            // Highlight bingo column
-            for (let row = 0; row < size; row++) {
-                cells[row * size + col].classList.add('bingo-line');
-            }
         }
     }
 
-    // Check diagonal (top-left to bottom-right)
-    const diagKey1 = 'diag-1';
-    const isDiag1Complete = grid.every((row, i) => row[i]);
-    if (isDiag1Complete) {
-        if (!celebratedLines.has(diagKey1)) {
-            newBingoFound = true;
-            celebratedLines.add(diagKey1);
-            log('New bingo found in diagonal 1');
-        }
-        // Highlight diagonal
+    // Check diagonals
+    const diagonal1Complete = Array.from({length: size}, (_, i) => selected[i * size + i]).every(Boolean);
+    if (diagonal1Complete && !bingoStates.diagonals.has(0)) {
+        bingoStates.diagonals.add(0);
+        newBingo = true;
+    } else if (!diagonal1Complete && bingoStates.diagonals.has(0)) {
+        bingoStates.diagonals.delete(0);
+    }
+
+    if (diagonal1Complete) {
         for (let i = 0; i < size; i++) {
-            cells[i * size + i].classList.add('bingo-line');
+            const cellIndex = i * size + i;
+            if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
+            bingoCells.get(cellIndex).add('diagonal');
         }
     }
 
-    // Check diagonal (top-right to bottom-left)
-    const diagKey2 = 'diag-2';
-    const isDiag2Complete = grid.every((row, i) => row[size - 1 - i]);
-    if (isDiag2Complete) {
-        if (!celebratedLines.has(diagKey2)) {
-            newBingoFound = true;
-            celebratedLines.add(diagKey2);
-            log('New bingo found in diagonal 2');
-        }
-        // Highlight diagonal
+    const diagonal2Complete = Array.from({length: size}, (_, i) => selected[i * size + (size - 1 - i)]).every(Boolean);
+    if (diagonal2Complete && !bingoStates.diagonals.has(1)) {
+        bingoStates.diagonals.add(1);
+        newBingo = true;
+    } else if (!diagonal2Complete && bingoStates.diagonals.has(1)) {
+        bingoStates.diagonals.delete(1);
+    }
+
+    if (diagonal2Complete) {
         for (let i = 0; i < size; i++) {
-            cells[i * size + (size - 1 - i)].classList.add('bingo-line');
+            const cellIndex = i * size + (size - 1 - i);
+            if (!bingoCells.has(cellIndex)) bingoCells.set(cellIndex, new Set());
+            bingoCells.get(cellIndex).add('diagonal');
         }
     }
 
-    // Check for full board celebration last
-    if (isFullBoard && !celebratedLines.has('fullBoard')) {
-        celebratedLines.add('fullBoard');
-        log('Full board achieved!');
-        celebrateFullBoard();
+    // Apply visual classes based on bingo lines
+    bingoCells.forEach((types, index) => {
+        const cell = cells[index];
+        if (types.size > 1) {
+            cell.classList.add('bingo-multiple');
+        } else {
+            if (types.has('row')) cell.classList.add('bingo-row');
+            if (types.has('column')) cell.classList.add('bingo-column');
+            if (types.has('diagonal')) cell.classList.add('bingo-diagonal');
+        }
+    });
+
+    if (newBingo) {
+        startCelebration();
     }
 
-    return newBingoFound;
+    return newBingo;
 }
 
 /**
@@ -146,4 +167,42 @@ function resetBingoState() {
         }
     });
     log('Bingo board state reset');
+}
+
+function initializeBingoCard() {
+    const cells = document.querySelectorAll('.bingo-cell');
+
+    cells.forEach(cell => {
+        // Add both click and touch events
+        cell.addEventListener('click', toggleCell);
+        cell.addEventListener('touchstart', handleTouch, { passive: true });
+    });
+}
+
+function handleTouch(event) {
+    event.preventDefault();
+    const cell = event.currentTarget;
+    toggleCell({ currentTarget: cell });
+}
+
+function toggleCell(event) {
+    const cell = event.currentTarget;
+    cell.classList.toggle('selected');
+    checkForBingo();
+}
+
+// Track bingo states
+const bingoStates = {
+    rows: new Set(),      // Store completed row indices
+    columns: new Set(),   // Store completed column indices
+    diagonals: new Set(),  // Store completed diagonal indices (0 = main, 1 = counter)
+    superBingo: false
+};
+
+// Add function to reset bingo states (call this when generating a new board)
+function resetBingoStates() {
+    bingoStates.rows.clear();
+    bingoStates.columns.clear();
+    bingoStates.diagonals.clear();
+    bingoStates.superBingo = false;
 }

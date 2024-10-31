@@ -1,0 +1,203 @@
+/* Bingo board layout */
+#bingoCard {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+    margin: auto;
+    width: min(95%, calc(100vh - 400px));
+    aspect-ratio: 1;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+/* Bingo cell styling */
+.bingo-cell {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-background);
+    border: 3px solid var(--divider-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.bingo-cell span {
+    position: relative;
+    z-index: 1;
+    padding: var(--spacing-sm);
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    font-size: clamp(0.7rem, 2vmin, 1rem);
+    text-align: center;
+    max-width: 90%;
+    word-break: break-word;
+}
+
+.bingo-cell img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+}
+
+/* Bingo states */
+.bingo-cell.selected {
+    border-color: var(--accent-color);
+    transform: scale(0.98);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.bingo-cell.bingo-row {
+    background-color: rgba(76, 175, 80, 0.3) !important;
+    border-color: var(--success-color);
+}
+
+.bingo-cell.bingo-column {
+    background-color: rgba(33, 150, 243, 0.3) !important;
+    border-color: #2196F3;
+}
+
+.bingo-cell.bingo-diagonal {
+    background-color: rgba(156, 39, 176, 0.3) !important;
+    border-color: #9C27B0;
+}
+
+.bingo-cell.bingo-multiple {
+    background-color: rgba(255, 193, 7, 0.3) !important;
+    border-color: #FFC107;
+    animation: pulse 2s infinite;
+}
+
+.bingo-cell.super-bingo {
+    background-color: rgba(255, 215, 0, 0.4) !important;
+    border-color: gold;
+    animation: superPulse 1.5s infinite;
+}
+
+/* Star icon in FREE space */
+.star-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    color: var(--accent-color);
+    opacity: 0.3;
+    z-index: 0;
+}
+
+/* Celebration elements */
+#confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.confetti {
+    position: absolute;
+    top: -10px;
+    width: 10px;
+    height: 20px;
+    animation: fall 5s var(--delay) linear forwards;
+    transform: rotate(var(--rotation));
+    left: var(--x);
+}
+
+.celebration-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    animation: celebrate 1s ease-in-out infinite;
+    z-index: 1001;
+}
+
+/* Animations */
+@keyframes fall {
+    0% {
+        transform: translateY(-10vh) rotate(var(--rotation));
+        opacity: 1;
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(calc(var(--rotation) + 360deg));
+        opacity: 0;
+    }
+}
+
+@keyframes celebrate {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.98); }
+    50% { transform: scale(1); }
+    100% { transform: scale(0.98); }
+}
+
+@keyframes superPulse {
+    0% {
+        transform: scale(0.98);
+        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+    }
+    100% {
+        transform: scale(0.98);
+        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+    }
+}
+
+/* Update FREE space specific styles */
+.bingo-cell.free-space {
+    background-color: var(--primary-light);
+}
+
+.bingo-cell.free-space span {
+    font-weight: bold;
+    color: var(--primary-dark);
+    z-index: 1;
+    background-color: transparent;
+}
+
+.bingo-cell.free-space.selected {
+    background-color: var(--primary-dark);
+}
+
+.bingo-cell.free-space.selected span {
+    color: white;
+}
+
+.bingo-cell.free-space.selected .star-icon {
+    color: white;
+    opacity: 0.2;
+}
