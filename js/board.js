@@ -4,41 +4,56 @@ const BOARD_SIZE = 5;
 const FREE_SPACE_INDEX = 12;
 
 async function generateBingo() {
-    console.log('generateBingo called');
+    console.log('Generating bingo board...');
 
-    const reference = document.getElementById('bibleReference').value;
-    const button = document.getElementById('generateButton');
-    const loader = document.getElementById('loader');
+    // Get references to input and button
+    const input = document.getElementById('bibleReference');
+    const button = document.querySelector('.input-group button');
     const bingoCard = document.getElementById('bingoCard');
+    const loadingMessage = document.querySelector('.loading');
 
-    console.log('Starting generation for reference:', reference);
+    if (loadingMessage) {
+        loadingMessage.remove();
+    }
+
+    if (!input || !button || !bingoCard) {
+        console.error('Could not find required elements');
+        return;
+    }
 
     try {
-        // Show loading state
+        // Disable input and button while generating
+        input.disabled = true;
         button.disabled = true;
-        loader.style.display = 'flex';
-        bingoCard.innerHTML = '';
 
-        // Get topics from API
+        // Show loading message in the bingo card area
+        bingoCard.innerHTML = '<div class="loading">Generating Card...</div>';
+
+        const reference = input.value.trim();
         const topics = await getSermonTopics(reference);
-        console.log(`Generated ${topics.length} topics`);
 
-        // Create the board
         await createBoard(topics);
-        console.log('Board created');
 
     } catch (error) {
         console.error('Error generating bingo:', error);
-        alert(error.message);
+        bingoCard.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     } finally {
-        button.disabled = false;
-        loader.style.display = 'none';
+        // Re-enable input and button
+        if (input) input.disabled = false;
+        if (button) button.disabled = false;
     }
 }
 
 async function createBoard(topics) {
     console.log('Creating board...');
     const bingoCard = document.getElementById('bingoCard');
+
+    if (!bingoCard) {
+        console.error('Could not find bingoCard element');
+        return;
+    }
+
+    // Clear any existing content (including loading message)
     bingoCard.innerHTML = '';
 
     // Reset bingo states for new board
@@ -129,3 +144,26 @@ window.addEventListener('resize', () => {
         }
     }, 250);
 });
+
+// Add event listeners when the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('bibleReference');
+    const button = document.querySelector('.input-group button');
+
+    if (input && button) {
+        input.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                generateBingo();
+            }
+        });
+
+        // Add click handler to button (if not already handled by onclick in HTML)
+        button.addEventListener('click', generateBingo);
+    } else {
+        console.error('Could not find input or button elements during initialization');
+    }
+});
+
+// Export the function for use in HTML
+window.generateBingo = generateBingo;

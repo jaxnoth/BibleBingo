@@ -176,22 +176,22 @@ const fallbackTopics = [
 async function getSermonTopics(reference) {
     console.log('Getting topics for reference:', reference);
 
-    if (!reference || typeof reference !== 'string') {
-        console.error('Invalid reference provided');
+    if (!reference || reference.trim() === '') {
+        console.log('No reference provided, using default topics');
         return shuffleArray([...fallbackTopics]);
     }
 
-    // Increase timeout and add visual feedback
-    const timeoutDuration = 15000; // 15 seconds
-    let timeoutId;
+    if (!window.env?.GROQ_API_KEY) {
+        console.log('GROQ API key not configured in env.js, using default topics');
+        return shuffleArray([...fallbackTopics]);
+    }
 
     try {
         const result = await Promise.race([
-            // Actual API call
             fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${config.GROQ_API_KEY}`,
+                    'Authorization': `Bearer ${window.env.GROQ_API_KEY}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -199,11 +199,15 @@ async function getSermonTopics(reference) {
                     messages: [
                         {
                             role: "user",
-                            content: `Generate 24 unique, single-word sermon topics related to Bible verse ${reference}.
-                                Format as JSON array of objects, each with 'word' and 'imageDescription' properties.
-                                Keep words simple and biblical.
-                                Make image descriptions clear and safe for work.
-                                Example format: [{"word": "Love", "imageDescription": "heart symbol"}]`
+                            content: `Generate exactly 24 unique, single-word sermon topics related to Bible verse ${reference}.
+                                Return as a JSON array of objects with 'word' and 'imageDescription' properties.
+                                Example format: {"topics": [
+                                    {"word": "Love", "imageDescription": "heart symbol"},
+                                    {"word": "Faith", "imageDescription": "praying hands"}
+                                ]}
+                                You must return EXACTLY 24 topics, no more, no less.
+                                Keep image descriptions simple and clear.
+                                Do not use complex or abstract descriptions.`
                         }
                     ],
                     temperature: 0.7,
@@ -217,26 +221,43 @@ async function getSermonTopics(reference) {
                 return response.json();
             }),
 
-            // Timeout promise
             new Promise((_, reject) => {
-                timeoutId = setTimeout(() => {
-                    reject(new Error('Using fallback topics due to timeout'));
-                }, timeoutDuration);
+                setTimeout(() => reject(new Error('Using fallback topics due to timeout')), 15000);
             })
         ]);
 
-        // Clear timeout if API call succeeded
-        clearTimeout(timeoutId);
+        console.log('API Response:', result); // Debug log
 
         const content = result.choices[0].message.content;
-        let topics;
+        console.log('Content:', content); // Debug log
 
         try {
             const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-            topics = parsedContent.sermonTopics || parsedContent;
+            console.log('Parsed Content:', parsedContent); // Debug log
 
-            if (!Array.isArray(topics) || topics.length < 24) {
-                console.log('Invalid topics format or count, using fallback');
+            // Try different possible structures
+            const topics = parsedContent.topics || parsedContent.sermonTopics || parsedContent;
+
+            if (!Array.isArray(topics)) {
+                console.log('Topics is not an array:', topics);
+                return shuffleArray([...fallbackTopics]);
+            }
+
+            if (topics.length < 24) {
+                console.log('Not enough topics:', topics.length);
+                return shuffleArray([...fallbackTopics]);
+            }
+
+            // Validate topic format
+            const validTopics = topics.every(topic =>
+                topic.word &&
+                typeof topic.word === 'string' &&
+                topic.imageDescription &&
+                typeof topic.imageDescription === 'string'
+            );
+
+            if (!validTopics) {
+                console.log('Invalid topic format in:', topics);
                 return shuffleArray([...fallbackTopics]);
             }
 
@@ -248,10 +269,7 @@ async function getSermonTopics(reference) {
         }
 
     } catch (error) {
-        // Clear timeout if it exists
-        if (timeoutId) clearTimeout(timeoutId);
-
-        console.log('Using fallback topics due to error:', error.message);
+        console.log('API error:', error.message);
         return shuffleArray([...fallbackTopics]);
     }
 }

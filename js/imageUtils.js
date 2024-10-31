@@ -97,13 +97,17 @@ async function getImageUrlFromDescription(description) {
         // Check cache first
         if (window.imageCache.has(searchTerm)) {
             console.log('Cache hit for:', searchTerm);
-            const urls = window.imageCache.get(searchTerm);
-            // Return the first valid URL from cache
-            return Array.isArray(urls) ? urls[0] : urls;
+            return window.imageCache.get(searchTerm);
+        }
+
+        // Verify API key exists
+        if (!window.env?.PIXABAY_API_KEY) {
+            console.error('Pixabay API key not configured');
+            return null;
         }
 
         console.log('Fetching from Pixabay:', searchTerm);
-        const response = await fetch(`https://pixabay.com/api/?key=${config.PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
+        const response = await fetch(`https://pixabay.com/api/?key=${window.env.PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
 
         if (!response.ok) {
             throw new Error(`Pixabay API error: ${response.status}`);
@@ -112,11 +116,16 @@ async function getImageUrlFromDescription(description) {
         const data = await response.json();
 
         if (data.hits && data.hits.length > 0) {
-            // Store only the first URL in cache
             const imageUrl = data.hits[0].webformatURL;
             window.imageCache.set(searchTerm, imageUrl);
             return imageUrl;
         } else {
+            // If no specific image found, try a simpler search term
+            const simplifiedTerm = searchTerm.split(' ')[0];
+            if (simplifiedTerm !== searchTerm) {
+                console.log('Trying simplified search:', simplifiedTerm);
+                return getImageUrlFromDescription(simplifiedTerm);
+            }
             throw new Error('No images found');
         }
 

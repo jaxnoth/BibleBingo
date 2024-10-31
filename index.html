@@ -21,39 +21,24 @@
 
     <main class="container">
         <section class="input-section">
-            <form id="referenceForm">
-                <div class="input-group">
-                    <label for="bibleReference">Bible Reference:</label>
-                    <input type="text"
-                           id="bibleReference"
-                           placeholder="e.g., John 3:16"
-                           pattern="[1-3]?\s*[A-Za-z]+\s*\d+:\d+"
-                           required
-                           autocomplete="off"
-                           value="John 3:16">
-                </div>
-                <button type="submit" id="generateButton">Generate Bingo Card</button>
-            </form>
+            <div class="input-group">
+                <input type="text" id="bibleReference" placeholder="Enter Bible reference (optional)...">
+                <button onclick="generateBingo()">Generate Board</button>
+            </div>
         </section>
 
         <section id="bingoCard" class="bingo-card" aria-label="Bingo Card"></section>
-
-        <div id="loader" class="loader" aria-hidden="true">
-            <div class="spinner"></div>
-            <p>Generating card...</p>
-        </div>
     </main>
 
     <footer>
         <p>&copy; 2024 Bible Bingo</p>
     </footer>
 
-    <!-- Scripts -->
+    <!-- Load scripts in correct order -->
     <script src="env.js"></script>
     <script src="config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/imageUtils.js"></script>
-    <script src="js/gameConfig.js"></script>
     <script src="js/board.js"></script>
     <script src="js/bingo.js"></script>
     <script src="js/celebration.js"></script>
