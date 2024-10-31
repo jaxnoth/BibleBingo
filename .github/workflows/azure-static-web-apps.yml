@@ -15,13 +15,11 @@ jobs:
     name: Build and Deploy Job
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Create env.js
-        run: |
-          echo "window.ENV_GROQ_API_KEY = '${{ secrets.GROQ_API_KEY }}';" > env.js
-          echo "window.ENV_PIXABAY_API_KEY = '${{ secrets.PIXABAY_API_KEY }}';" >> env.js
 
       - name: Build And Deploy
         id: builddeploy
@@ -35,7 +33,6 @@ jobs:
           action: "upload"
           app_location: "/"
           output_location: ""
-          app_build_command: ""
 
     env:
       PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
