@@ -18,7 +18,11 @@ async function generateBingo() {
         // Clear image cache before generating new board
         window.clearImageCache();
 
-        const topics = await getSermonTopics();
+        const referenceInput = document.getElementById('bibleReference');
+        const reference = referenceInput ? referenceInput.value : '';
+        console.log('Using reference:', reference);
+
+        const topics = await getSermonTopics(reference);
         await createBoard(topics);
 
     } catch (error) {
