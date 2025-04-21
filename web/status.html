@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Status Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .status-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .status-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .status-success {
+            background-color: #4CAF50;
+        }
+        .status-error {
+            background-color: #f44336;
+        }
+        .status-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .status-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .status-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .last-updated {
+            text-align: right;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .refresh-button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .refresh-button:hover {
+            background-color: #1976D2;
+        }
+        .error-message {
+            color: #f44336;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            word-break: break-word;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Status Monitor</h1>
+
+    <div class="status-container" id="groq-status">
+        <div class="status-header">
+            <div class="status-title">GROQ API</div>
+            <div class="status-indicator" id="groq-indicator"></div>
+        </div>
+        <div class="status-details">
+            <div class="status-item">
+                <div class="status-label">Status</div>
+                <div id="groq-status-text">Checking...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Response Time</div>
+                <div id="groq-response-time">Checking...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Status Code</div>
+                <div id="groq-status-code">Checking...</div>
+            </div>
+        </div>
+        <div id="groq-error" class="error-message" style="display: none;"></div>
+    </div>
+
+    <div class="status-container" id="pixabay-status">
+        <div class="status-header">
+            <div class="status-title">Pixabay API</div>
+            <div class="status-indicator" id="pixabay-indicator"></div>
+        </div>
+        <div class="status-details">
+            <div class="status-item">
+                <div class="status-label">Status</div>
+                <div id="pixabay-status-text">Checking...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Response Time</div>
+                <div id="pixabay-response-time">Checking...</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Status Code</div>
+                <div id="pixabay-status-code">Checking...</div>
+            </div>
+        </div>
+        <div id="pixabay-error" class="error-message" style="display: none;"></div>
+    </div>
+
+    <div class="last-updated" id="last-updated"></div>
+    <button class="refresh-button" onclick="checkStatus()">Refresh Status</button>
+
+    <script>
+        async function checkStatus() {
+            try {
+                // Show loading state
+                setLoadingState(true);
+
+                const response = await fetch('/api/status');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                updateStatus('groq', data.groq);
+                updateStatus('pixabay', data.pixabay);
+
+                document.getElementById('last-updated').textContent =
+                    `Last updated: ${new Date().toLocaleString()}`;
+            } catch (error) {
+                console.error('Error checking status:', error);
+                showError('groq', 'Failed to fetch status');
+                showError('pixabay', 'Failed to fetch status');
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function updateStatus(api, data) {
+            const indicator = document.getElementById(`${api}-indicator`);
+            const statusText = document.getElementById(`${api}-status-text`);
+            const responseTime = document.getElementById(`${api}-response-time`);
+            const statusCode = document.getElementById(`${api}-status-code`);
+            const errorDiv = document.getElementById(`${api}-error`);
+
+            indicator.className = `status-indicator status-${data.status}`;
+            statusText.textContent = data.status;
+            responseTime.textContent = data.responseTime;
+            statusCode.textContent = data.statusCode;
+
+            if (data.status === 'error') {
+                errorDiv.textContent = data.error || 'Unknown error occurred';
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        function showError(api, message) {
+            const errorDiv = document.getElementById(`${api}-error`);
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+
+            const indicator = document.getElementById(`${api}-indicator`);
+            indicator.className = 'status-indicator status-error';
+        }
+
+        function setLoadingState(isLoading) {
+            const statusTexts = document.querySelectorAll('[id$="-status-text"]');
+            const responseTimes = document.querySelectorAll('[id$="-response-time"]');
+            const statusCodes = document.querySelectorAll('[id$="-status-code"]');
+
+            statusTexts.forEach(el => el.textContent = isLoading ? 'Checking...' : '');
+            responseTimes.forEach(el => el.textContent = isLoading ? 'Checking...' : '');
+            statusCodes.forEach(el => el.textContent = isLoading ? 'Checking...' : '');
+        }
+
+        // Check status on page load and every 5 minutes
+        checkStatus();
+        setInterval(checkStatus, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

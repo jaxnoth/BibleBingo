@@ -51,32 +51,40 @@ async function getImageUrlFromDescription(description) {
         }
 
         log('Cache miss for:', searchTerm);
-        // Construct Pixabay API URL
-        const apiUrl = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=${IMAGE_TYPE}&orientation=${ORIENTATION}&safesearch=${SAFE_SEARCH}`;
+        // Construct Pixabay API URL with updated parameters
+        const apiUrl = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(searchTerm)}&image_type=${IMAGE_TYPE}&orientation=${ORIENTATION}&safesearch=${SAFE_SEARCH}&per_page=3`;
 
         const response = await fetch(apiUrl);
-        const data = await response.json();
-
-        if (data.hits && data.hits.length > 0) {
-            // Get random image from results
-            const unusedHits = data.hits.filter(hit => !usedImages.has(hit.webformatURL));
-            if (unusedHits.length > 0) {
-                const randomHit = unusedHits[Math.floor(Math.random() * unusedHits.length)];
-                const imageUrl = randomHit.webformatURL;
-
-                // Cache the URL and mark as used
-                log('Caching new image for:', searchTerm);
-                imageCache.set(searchTerm, imageUrl);
-                usedImages.add(imageUrl);
-
-                return imageUrl;
-            }
+        if (!response.ok) {
+            throw new Error(`Pixabay API error: ${response.status} ${response.statusText}`);
         }
 
-        log('No images found, using fallback');
+        const data = await response.json();
+
+        if (!data.hits || !Array.isArray(data.hits) || data.hits.length === 0) {
+            log('No images found in response:', data);
+            return createColoredBackground(description);
+        }
+
+        // Get random image from results
+        const unusedHits = data.hits.filter(hit => !usedImages.has(hit.webformatURL));
+        if (unusedHits.length > 0) {
+            const randomHit = unusedHits[Math.floor(Math.random() * unusedHits.length)];
+            const imageUrl = randomHit.webformatURL;
+
+            // Cache the URL and mark as used
+            log('Caching new image for:', searchTerm);
+            imageCache.set(searchTerm, imageUrl);
+            usedImages.add(imageUrl);
+
+            return imageUrl;
+        }
+
+        log('No unused images found, using fallback');
         return createColoredBackground(description);
     } catch (error) {
         console.error('Error fetching image:', error);
+        showError(`Error loading image: ${error.message}`);
         return createColoredBackground(description);
     }
 }
