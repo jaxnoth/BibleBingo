@@ -206,28 +206,49 @@ async function getSermonTopics(reference) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: "mixtral-8x7b-32768",
+                    model: "llama-3.3-70b-versatile",
                     messages: [
                         {
+                            role: "system",
+                            content: "You are a helpful assistant that generates sermon topics in a specific JSON format. You MUST return EXACTLY 24 topics."
+                        },
+                        {
                             role: "user",
-                            content: `Generate exactly 24 unique, single-word sermon topics related to Bible verse ${reference}.
-                                Return as a JSON array of objects with 'word' and 'imageDescription' properties.
-                                Example format: {"topics": [
-                                    {"word": "Love", "imageDescription": "heart symbol"},
-                                    {"word": "Faith", "imageDescription": "praying hands"}
-                                ]}
-                                You must return EXACTLY 24 topics, no more, no less.
-                                Keep image descriptions simple and clear.
-                                Do not use complex or abstract descriptions.`
+                            content: `For the Bible verse "${reference}", generate EXACTLY 24 sermon topics. Each topic should be a single word and have a simple image description.
+
+IMPORTANT: Return ONLY a JSON object with this EXACT structure:
+{
+    "topics": [
+        {
+            "word": "Love",
+            "imageDescription": "heart symbol"
+        },
+        {
+            "word": "Faith",
+            "imageDescription": "praying hands"
+        }
+        // ... 22 more topics ...
+    ]
+}
+
+Rules:
+1. You MUST return EXACTLY 24 topics - no more, no less
+2. Each topic must have both "word" and "imageDescription"
+3. Words should be single, simple terms
+4. Image descriptions should be clear and concrete
+5. No explanations or additional text
+6. Ensure valid JSON format
+7. Count your topics to ensure you have exactly 24 before returning`
                         }
                     ],
                     temperature: 0.7,
-                    max_tokens: 1024,
+                    max_tokens: 1000,
                     response_format: { type: "json_object" }
                 })
             }).then(async response => {
                 if (!response.ok) {
-                    throw new Error(`API response not ok: ${response.status}`);
+                    const errorData = await response.json();
+                    throw new Error(`API response not ok: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
                 }
                 return response.json();
             }),
@@ -237,17 +258,19 @@ async function getSermonTopics(reference) {
             })
         ]);
 
-        console.log('API Response:', result); // Debug log
+        console.log('API Response:', result);
 
+        // Extract the content from the response
         const content = result.choices[0].message.content;
-        console.log('Content:', content); // Debug log
+        console.log('Raw Content:', content);
 
         try {
+            // Parse the content string into JSON
             const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-            console.log('Parsed Content:', parsedContent); // Debug log
+            console.log('Parsed Content:', parsedContent);
 
-            // Try different possible structures
-            const topics = parsedContent.topics || parsedContent.sermonTopics || parsedContent;
+            // Extract the topics array
+            const topics = parsedContent.topics;
 
             if (!Array.isArray(topics)) {
                 console.log('Topics is not an array:', topics);
@@ -255,8 +278,29 @@ async function getSermonTopics(reference) {
             }
 
             if (topics.length < 24) {
-                console.log('Not enough topics:', topics.length);
-                return shuffleArray([...fallbackTopics]);
+                console.log(`Received ${topics.length} topics, augmenting with fallback topics`);
+                // Create a new array with the API topics and fill the rest with fallback topics
+                const augmentedTopics = [...topics];
+                const remainingCount = 24 - topics.length;
+
+                // Get random fallback topics that aren't already in the API response
+                const apiWords = new Set(topics.map(t => t.word.toLowerCase()));
+                const availableFallbacks = fallbackTopics.filter(t => !apiWords.has(t.word.toLowerCase()));
+                const shuffledFallbacks = shuffleArray([...availableFallbacks]);
+
+                // Add fallback topics until we have 24
+                for (let i = 0; i < remainingCount && i < shuffledFallbacks.length; i++) {
+                    augmentedTopics.push(shuffledFallbacks[i]);
+                }
+
+                // If we still don't have enough, add any remaining fallback topics
+                if (augmentedTopics.length < 24) {
+                    const remainingFallbacks = fallbackTopics.filter(t => !augmentedTopics.some(at => at.word.toLowerCase() === t.word.toLowerCase()));
+                    augmentedTopics.push(...remainingFallbacks.slice(0, 24 - augmentedTopics.length));
+                }
+
+                console.log('Augmented topics:', augmentedTopics);
+                return augmentedTopics;
             }
 
             // Validate topic format
@@ -272,6 +316,7 @@ async function getSermonTopics(reference) {
                 return shuffleArray([...fallbackTopics]);
             }
 
+            console.log('Returning valid topics:', topics);
             return topics;
 
         } catch (e) {

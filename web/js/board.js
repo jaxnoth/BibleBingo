@@ -3,29 +3,77 @@ console.log('board.js loaded');
 const BOARD_SIZE = 5;
 const FREE_SPACE_INDEX = 12;
 
+// Debug mode for localhost
+const DEBUG = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+function debug(...args) {
+    if (DEBUG) {
+        console.log('[DEBUG]', ...args);
+    }
+}
+
 let isGenerating = false;
 
 async function generateBingo() {
     if (isGenerating) {
-        console.log('Already generating a board, please wait...');
+        debug('Already generating a board, please wait...');
         return;
     }
 
     try {
         isGenerating = true;
-        console.log('Generating bingo board...');
+        debug('Starting board generation...');
 
         // Clear image cache before generating new board
         window.clearImageCache();
+        debug('Image cache cleared');
 
         const referenceInput = document.getElementById('bibleReference');
         const reference = referenceInput ? referenceInput.value : '';
-        console.log('Using reference:', reference);
+        debug('Bible reference:', reference);
 
+        debug('Fetching sermon topics...');
         const topics = await getSermonTopics(reference);
+        debug('Received topics:', topics);
+
+        if (!topics || !Array.isArray(topics) || topics.length === 0) {
+            debug('No topics received, using fallback');
+            // Use fallback topics if none received
+            const fallbackTopics = [
+                { word: "Love", imageDescription: "heart symbol" },
+                { word: "Faith", imageDescription: "praying hands" },
+                { word: "Hope", imageDescription: "sunrise over mountains" },
+                { word: "Grace", imageDescription: "dove in flight" },
+                { word: "Peace", imageDescription: "olive branch" },
+                { word: "Joy", imageDescription: "smiling face" },
+                { word: "Truth", imageDescription: "open bible" },
+                { word: "Light", imageDescription: "shining candle" },
+                { word: "Life", imageDescription: "growing tree" },
+                { word: "Cross", imageDescription: "wooden cross" },
+                { word: "Prayer", imageDescription: "folded hands" },
+                { word: "Mercy", imageDescription: "helping hands" },
+                { word: "Spirit", imageDescription: "dove flying" },
+                { word: "Word", imageDescription: "open bible pages" },
+                { word: "Saved", imageDescription: "rescue lifeline" },
+                { word: "Believe", imageDescription: "mountain faith" },
+                { word: "Heaven", imageDescription: "clouds and light" },
+                { word: "Glory", imageDescription: "sunburst" },
+                { word: "Praise", imageDescription: "raised hands" },
+                { word: "Holy", imageDescription: "flame" },
+                { word: "Eternal", imageDescription: "infinity symbol" },
+                { word: "Blessed", imageDescription: "rainbow" },
+                { word: "Gospel", imageDescription: "scroll" },
+                { word: "Amen", imageDescription: "praying hands" }
+            ];
+            await createBoard(fallbackTopics);
+            return;
+        }
+
         await createBoard(topics);
+        debug('Board creation completed');
 
     } catch (error) {
+        debug('Error generating bingo:', error);
         console.error('Error generating bingo:', error);
     } finally {
         isGenerating = false;
@@ -33,31 +81,36 @@ async function generateBingo() {
 }
 
 async function createBoard(topics) {
-    console.log('Creating board...');
+    debug('Creating board with topics:', topics);
     const bingoCard = document.getElementById('bingoCard');
 
     if (!bingoCard) {
-        console.error('Could not find bingoCard element');
+        debug('Could not find bingoCard element');
         return;
     }
 
     // Clear any existing content and remove any existing event listeners
     bingoCard.innerHTML = '';
+    debug('Cleared existing board content');
 
     // Reset bingo states for new board
     resetBingoStates();
+    debug('Reset bingo states');
 
     // Ensure exactly 24 topics (25th space is FREE)
     const shuffledTopics = shuffleArray([...topics]).slice(0, 24);
+    debug('Shuffled and sliced topics:', shuffledTopics);
     let topicIndex = 0;
 
-    // Create exactly 25 cells (5x5 grid)
+    // Phase 1: Create all cells with words
+    const cells = [];
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.className = 'bingo-cell';
 
         // Center cell (index 12) is always FREE
         if (i === 12) {
+            debug('Creating free space at index 12');
             cell.innerHTML = `
                 <div class="cell-content free-space-content">
                     <svg class="star-background" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" pointer-events="none">
@@ -89,29 +142,41 @@ async function createBoard(topics) {
         } else {
             if (topicIndex < shuffledTopics.length) {
                 const topic = shuffledTopics[topicIndex++];
+                debug('Creating cell for topic:', topic);
                 if (topic) {
-                    const imageUrl = await getImageUrlFromDescription(topic.imageDescription);
-
-                    // Set background image directly on the cell
-                    if (imageUrl) {
-                        cell.style.backgroundImage = `url('${imageUrl}')`;
-                    }
-
                     cell.innerHTML = `
                         <div class="cell-content">
                             <span class="cell-text">${topic.word}</span>
                         </div>
                     `;
+                    // Store the topic with the cell for later image loading
+                    cells.push({ cell, topic });
                 }
             }
         }
 
-        cell.addEventListener('click', function() {
-            toggleCell(this);
-        });
-
+        // Add click event listener
+        cell.addEventListener('click', () => handleCellClick(cell));
         bingoCard.appendChild(cell);
     }
+
+    debug('Board creation completed, cells added to DOM');
+
+    // Phase 2: Load images asynchronously
+    debug('Starting async image loading for', cells.length, 'cells');
+    cells.forEach(({ cell, topic }) => {
+        (async () => {
+            try {
+                const imageUrl = await getImageUrlFromDescription(topic.imageDescription);
+                debug('Got image URL:', imageUrl);
+                if (imageUrl) {
+                    cell.style.backgroundImage = `url('${imageUrl}')`;
+                }
+            } catch (error) {
+                debug('Error loading image:', error);
+            }
+        })();
+    });
 }
 
 // Add window resize handler for responsive layout
