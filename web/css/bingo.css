@@ -46,13 +46,13 @@
 .bingo-cell span {
     position: relative;
     z-index: 1;
-    padding: var(--spacing-sm);
+    padding: 2px 4px;
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: var(--border-radius);
     font-weight: 500;
     font-size: clamp(0.7rem, 2vmin, 1rem);
     text-align: center;
-    max-width: 90%;
+    max-width: 98%;
     word-break: break-word;
 }
 
@@ -316,11 +316,23 @@
     white-space: nowrap;
     color: #ee6c4d !important;
     font-family: var(--font-accent) !important;
-    font-size: 1.1em !important;
+    font-size: clamp(0.5rem, 2.8vmin, 1.1em) !important;
     font-weight: 600;
     text-shadow: 0 1px 2px rgba(0,0,0,0.15);
     background-color: transparent !important;
     padding: 0 !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* On very small screens allow "FREE SPACE" to wrap so it fits */
+@media (max-width: 380px) {
+    .free-space .cell-content.free-space-content .free-text {
+        white-space: normal;
+        text-align: center;
+        line-height: 1.2;
+        font-size: clamp(0.45rem, 2.2vmin, 0.9em) !important;
+    }
 }
 
 .bingo-cell.marked {
@@ -361,7 +373,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 5px;
+    padding: 3px;
     text-align: center;
     position: relative; /* For absolute positioning of images */
 }
@@ -384,8 +396,8 @@
     line-height: 1.2;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    max-width: 90%;
-    padding: 5px;
+    max-width: 98%;
+    padding: 2px 4px;
     background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background for better readability */
     border-radius: 4px;
     text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
@@ -513,6 +525,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 3px;
+    box-sizing: border-box;
     background-color: rgba(255, 255, 255, 0.7); /* This creates the overlay effect */
 }
 
@@ -535,9 +549,9 @@
     line-height: 1.2;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    max-width: 90%;
+    max-width: 98%;
     background-color: rgba(255, 255, 255, 0.8);
-    padding: 5px 10px;
+    padding: 2px 4px;
     border-radius: 4px;
     font-weight: bold;
     text-align: center;
