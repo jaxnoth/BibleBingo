@@ -178,23 +178,23 @@ function startSuperCelebration() {
 
     confettiContainer.innerHTML = '';
 
-    // Create lots of golden confetti
+    // Theme-colored confetti (standout orange, main blue, secondary blues)
+    const themeColors = ['#ee6c4d', '#2c5777', '#548eba', '#bbdaea', '#98c1d9'];
     for (let i = 0; i < 200; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'confetti super-confetti';
         confetti.style.setProperty('--delay', `${Math.random() * 5}s`);
         confetti.style.setProperty('--rotation', `${Math.random() * 360}deg`);
         confetti.style.setProperty('--x', `${Math.random() * 100}vw`);
-        // Golden colors
-        confetti.style.backgroundColor = `hsl(${40 + Math.random() * 20}, 100%, ${50 + Math.random() * 20}%)`;
+        confetti.style.backgroundColor = themeColors[Math.floor(Math.random() * themeColors.length)];
         confettiContainer.appendChild(confetti);
     }
 
-    // Show super celebration message
+    // Show super celebration message (theme standout orange)
     const message = document.createElement('div');
     message.className = 'celebration-message super';
     message.textContent = 'SUPER BINGO!';
-    message.style.color = 'gold';
+    message.style.color = '#ee6c4d';
     message.style.fontSize = '5rem';
     document.body.appendChild(message);
 
@@ -239,15 +239,16 @@ window.celebrateSuperBingo = function() {
     const bingoMessage = document.getElementById('bingoMessage');
     if (bingoMessage) {
         bingoMessage.textContent = 'SUPER BINGO!';
-        bingoMessage.style.color = '#FFD700';
+        bingoMessage.style.color = '#ee6c4d';
         bingoMessage.style.fontSize = '5rem';
+        bingoMessage.classList.add('super-bingo-font');
         bingoMessage.classList.remove('show');
         void bingoMessage.offsetWidth;
         bingoMessage.classList.add('show');
     }
 
-    // More confetti for super bingo
-    const colors = ['#ffd700', '#ffd700', '#ff0000', '#00ff00', '#0000ff'];
+    // Theme-colored confetti for super bingo
+    const colors = ['#ee6c4d', '#2c5777', '#548eba', '#bbdaea', '#98c1d9'];
     const confettiCount = 200;
 
     // Create confetti in multiple waves
@@ -259,6 +260,7 @@ window.celebrateSuperBingo = function() {
 
     setTimeout(() => {
         if (bingoMessage) {
+            bingoMessage.classList.remove('super-bingo-font');
             bingoMessage.style.color = '';
             bingoMessage.style.fontSize = '';
         }

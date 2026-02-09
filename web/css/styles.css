@@ -1,16 +1,28 @@
 :root {
-    /* Theme variables */
-    --primary-color: #4CAF50;
-    --primary-dark: #388E3C;
-    --primary-light: #C8E6C9;
-    --accent-color: #FF9800;
-    --text-primary: #212121;
-    --text-secondary: #757575;
-    --divider-color: #BDBDBD;
-    --background-color: #F5F5F5;
-    --card-background: #FFFFFF;
-    --success-color: #4CAF50;
-    --error-color: #F44336;
+    /* QUICK GUIDE brand theme */
+    --dark-blue: #202833;
+    --off-white: #dae4e8;
+    --standout-orange: #ee6c4d;
+    --main-blue: #2c5777;
+    --secondary-blue-light: #bbdaea;
+    --secondary-blue-mid: #98c1d9;
+    --secondary-blue: #548eba;
+
+    --primary-color: var(--main-blue);
+    --primary-dark: var(--dark-blue);
+    --primary-light: var(--secondary-blue-light);
+    --accent-color: var(--standout-orange);
+    --text-primary: var(--dark-blue);
+    --text-secondary: #5a6570;
+    --divider-color: var(--secondary-blue-mid);
+    --background-color: var(--off-white);
+    --card-background: #ffffff;
+    --success-color: var(--main-blue);
+    --error-color: #c0392b;
+
+    /* Brand fonts: Oscine Bold (main), Reklame Script (accent). Using Google Fonts fallbacks. */
+    --font-heading: 'Oswald', sans-serif;
+    --font-accent: 'Dancing Script', cursive;
 
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -19,7 +31,7 @@
     --spacing-xl: 2rem;
 
     --border-radius: 8px;
-    --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --box-shadow: 0 2px 4px rgba(32, 40, 51, 0.12);
 }
 
 /* General page layout */
@@ -31,54 +43,51 @@ body {
     flex-direction: column;
     background-color: var(--background-color);
     color: var(--text-primary);
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--font-heading);
     overflow: hidden;
 }
 
 header {
     flex: 0 0 auto;
-    padding: var(--spacing-lg);
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
-    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: linear-gradient(135deg, var(--dark-blue), var(--main-blue));
+    color: var(--off-white);
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 8px rgba(32, 40, 51, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+header .logo {
+    height: 52px;
+    width: auto;
+    display: block;
+    object-fit: contain;
 }
 
 header h1 {
     margin: 0;
-    font-size: 2.5rem;
-    font-weight: bold;
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
     text-transform: uppercase;
     letter-spacing: 2px;
     position: relative;
     display: inline-block;
-    padding: 0 var(--spacing-xl);
+    padding: 0 var(--spacing-sm);
 }
 
-/* Add sparkle effect */
-header h1::before,
-header h1::after {
-    content: "✨";
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.5rem;
-    opacity: 0.8;
-}
-
-header h1::before {
-    left: -5px;
-    animation: sparkle 2s ease-in-out infinite;
-}
-
-header h1::after {
-    right: -5px;
-    animation: sparkle 2s ease-in-out infinite 1s;
-}
-
-@keyframes sparkle {
-    0%, 100% { opacity: 0.8; transform: translateY(-50%) scale(1); }
-    50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+header h1 .tagline {
+    font-family: var(--font-accent);
+    font-weight: 400;
+    text-transform: none;
+    font-size: 1.35rem;
+    display: block;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
 }
 
 main {
@@ -127,22 +136,33 @@ main {
     white-space: nowrap;
 }
 
+/* Subtle indicator when board uses default/fallback word list */
+.fallback-indicator {
+    margin: 0 auto var(--spacing-sm);
+    padding: 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
 footer {
     flex: 0 0 auto;
     padding: var(--spacing-sm);
-    background-color: var(--primary-dark);
-    color: white;
+    background-color: var(--dark-blue);
+    color: var(--off-white);
     text-align: center;
 }
 
 footer a {
-    color: var(--primary-light);
+    color: var(--secondary-blue-light);
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 footer a:hover {
-    color: white;
+    color: var(--off-white);
     text-decoration: underline;
 }
 

@@ -4,6 +4,8 @@
     "axios": "^1.6.2"
   },
   "scripts": {
+    "start": "cd web && npx -y serve",
+    "setup-env": "node -e \"const fs=require('fs'); const p='web/js/env.js'; if(!fs.existsSync(p)){fs.copyFileSync('env.js.template',p); console.log('Created web/js/env.js from template. Add your API keys.');} else {console.log('web/js/env.js already exists.');}\"",
     "monitor": "node scripts/api-monitor.js"
   }
 }

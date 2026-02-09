@@ -182,19 +182,23 @@ const fallbackTopics = [
 ];
 
 async function getSermonTopics(reference) {
-    console.log('Getting topics for reference:', reference);
+    const fallbackReason = { current: null };
+    console.log('[Bible Bingo] Getting topics for reference:', JSON.stringify(reference));
 
-    // Get API key from window.env (development)
+    // Get API key from window.env (development) or window.env set by config (production)
     const apiKey = window.env?.GROQ_API_KEY;
 
     if (!apiKey) {
-        console.log('GROQ API key not found, using default topics');
-        return shuffleArray([...fallbackTopics]);
+        fallbackReason.current = 'GROQ API key not found (check web/js/env.js or Azure app settings)';
+        console.warn('[Bible Bingo]', fallbackReason.current);
+        return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
     }
 
-    if (!reference || reference.trim() === '') {
-        console.log('No reference provided, using default topics');
-        return shuffleArray([...fallbackTopics]);
+    const trimmedRef = reference && typeof reference === 'string' ? reference.trim() : '';
+    if (!trimmedRef) {
+        fallbackReason.current = 'No Bible reference entered (optional field was empty)';
+        console.log('[Bible Bingo]', fallbackReason.current);
+        return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
     }
 
     try {
@@ -206,39 +210,16 @@ async function getSermonTopics(reference) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
+                    model: "llama-3.1-8b-instant",
                     messages: [
                         {
-                            role: "system",
-                            content: "You are a helpful assistant that generates sermon topics in a specific JSON format. You MUST return EXACTLY 24 topics."
-                        },
-                        {
                             role: "user",
-                            content: `For the Bible verse "${reference}", generate EXACTLY 24 sermon topics. Each topic should be a single word and have a simple image description.
-
-IMPORTANT: Return ONLY a JSON object with this EXACT structure:
-{
-    "topics": [
-        {
-            "word": "Love",
-            "imageDescription": "heart symbol"
-        },
-        {
-            "word": "Faith",
-            "imageDescription": "praying hands"
-        }
-        // ... 22 more topics ...
-    ]
-}
-
-Rules:
-1. You MUST return EXACTLY 24 topics - no more, no less
-2. Each topic must have both "word" and "imageDescription"
-3. Words should be single, simple terms
-4. Image descriptions should be clear and concrete
-5. No explanations or additional text
-6. Ensure valid JSON format
-7. Count your topics to ensure you have exactly 24 before returning`
+                            content: `For the Bible passage "${reference}":
+1. Generate exactly 24 unique, single-word sermon topics related to this passage. Each topic must have "word" and "imageDescription" (short, simple phrase for finding an image).
+2. Also provide a "tagline": one short phrase (3–8 words) that summarizes the message or theme of this passage, suitable as a subtitle (e.g. "The Ten Commandments", "Love one another", "Faith and courage").
+Return valid JSON only, with this exact structure:
+{"topics": [{"word": "Love", "imageDescription": "heart symbol"}, ...], "tagline": "Your short summary phrase"}
+You must return EXACTLY 24 topics. Keep image descriptions simple and clear.`
                         }
                     ],
                     temperature: 0.7,
@@ -247,60 +228,42 @@ Rules:
                 })
             }).then(async response => {
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API response not ok: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                    const text = await response.text();
+                    throw new Error(`API response ${response.status}: ${text.slice(0, 200)}`);
                 }
                 return response.json();
             }),
 
             new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Using fallback topics due to timeout')), 15000);
+                setTimeout(() => reject(new Error('GROQ request timed out after 15s')), 15000);
             })
         ]);
 
-        console.log('API Response:', result);
+        console.log('[Bible Bingo] API response received');
 
-        // Extract the content from the response
-        const content = result.choices[0].message.content;
-        console.log('Raw Content:', content);
+        const content = result.choices?.[0]?.message?.content;
+        if (content == null) {
+            fallbackReason.current = 'Unexpected API response shape (no content)';
+            console.warn('[Bible Bingo]', fallbackReason.current, result);
+            return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
+        }
 
         try {
-            // Parse the content string into JSON
             const parsedContent = typeof content === 'string' ? JSON.parse(content) : content;
-            console.log('Parsed Content:', parsedContent);
 
             // Extract the topics array
             const topics = parsedContent.topics;
 
             if (!Array.isArray(topics)) {
-                console.log('Topics is not an array:', topics);
-                return shuffleArray([...fallbackTopics]);
+                fallbackReason.current = 'API did not return a topics array';
+                console.warn('[Bible Bingo]', fallbackReason.current, parsedContent);
+                return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
             }
 
             if (topics.length < 24) {
-                console.log(`Received ${topics.length} topics, augmenting with fallback topics`);
-                // Create a new array with the API topics and fill the rest with fallback topics
-                const augmentedTopics = [...topics];
-                const remainingCount = 24 - topics.length;
-
-                // Get random fallback topics that aren't already in the API response
-                const apiWords = new Set(topics.map(t => t.word.toLowerCase()));
-                const availableFallbacks = fallbackTopics.filter(t => !apiWords.has(t.word.toLowerCase()));
-                const shuffledFallbacks = shuffleArray([...availableFallbacks]);
-
-                // Add fallback topics until we have 24
-                for (let i = 0; i < remainingCount && i < shuffledFallbacks.length; i++) {
-                    augmentedTopics.push(shuffledFallbacks[i]);
-                }
-
-                // If we still don't have enough, add any remaining fallback topics
-                if (augmentedTopics.length < 24) {
-                    const remainingFallbacks = fallbackTopics.filter(t => !augmentedTopics.some(at => at.word.toLowerCase() === t.word.toLowerCase()));
-                    augmentedTopics.push(...remainingFallbacks.slice(0, 24 - augmentedTopics.length));
-                }
-
-                console.log('Augmented topics:', augmentedTopics);
-                return augmentedTopics;
+                fallbackReason.current = `API returned ${topics.length} topics (need 24)`;
+                console.warn('[Bible Bingo]', fallbackReason.current);
+                return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
             }
 
             // Validate topic format
@@ -312,20 +275,27 @@ Rules:
             );
 
             if (!validTopics) {
-                console.log('Invalid topic format in:', topics);
-                return shuffleArray([...fallbackTopics]);
+                fallbackReason.current = 'API topics missing word or imageDescription';
+                console.warn('[Bible Bingo]', fallbackReason.current, topics.slice(0, 2));
+                return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
             }
 
-            console.log('Returning valid topics:', topics);
-            return topics;
+            const tagline = typeof parsedContent.tagline === 'string' && parsedContent.tagline.trim().length > 0
+                ? parsedContent.tagline.trim()
+                : null;
+
+            console.log('[Bible Bingo] Using AI-generated topics for', trimmedRef, tagline ? '— tagline: ' + tagline : '');
+            return { topics, usedFallback: false, tagline };
 
         } catch (e) {
-            console.error('JSON parse error:', e);
-            return shuffleArray([...fallbackTopics]);
+            fallbackReason.current = 'Could not parse API response: ' + (e.message || String(e));
+            console.error('[Bible Bingo]', fallbackReason.current, e);
+            return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
         }
 
     } catch (error) {
-        console.log('API error:', error.message);
-        return shuffleArray([...fallbackTopics]);
+        fallbackReason.current = 'GROQ request failed: ' + (error.message || String(error));
+        console.warn('[Bible Bingo]', fallbackReason.current);
+        return { topics: shuffleArray([...fallbackTopics]), usedFallback: true, fallbackReason: fallbackReason.current, tagline: null };
     }
 }

@@ -26,14 +26,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 0, 0, 0.1);
-    border: 2px solid #ddd;
+    background-color: var(--card-background);
+    border: 2px solid var(--secondary-blue-mid);
     border-radius: var(--border-radius);
     overflow: hidden;
     padding: 0;
     transition: all 0.3s ease;
     cursor: pointer;
-    background: white;
     width: 100%;
     height: 100%;
 
@@ -76,29 +75,29 @@
 }
 
 .bingo-cell.bingo-row {
-    background-color: rgba(76, 175, 80, 0.3) !important;
-    border-color: var(--success-color);
+    background-color: rgba(44, 87, 119, 0.25) !important;
+    border-color: var(--main-blue);
 }
 
 .bingo-cell.bingo-column {
-    background-color: rgba(33, 150, 243, 0.3) !important;
-    border-color: #2196F3;
+    background-color: rgba(84, 142, 186, 0.25) !important;
+    border-color: var(--secondary-blue);
 }
 
 .bingo-cell.bingo-diagonal {
-    background-color: rgba(156, 39, 176, 0.3) !important;
-    border-color: #9C27B0;
+    background-color: rgba(152, 193, 217, 0.35) !important;
+    border-color: var(--secondary-blue-mid);
 }
 
 .bingo-cell.bingo-multiple {
-    background-color: rgba(255, 193, 7, 0.3) !important;
-    border-color: #FFC107;
+    background-color: rgba(238, 108, 77, 0.2) !important;
+    border-color: var(--standout-orange);
     animation: pulse 2s infinite;
 }
 
 .bingo-cell.super-bingo {
-    background-color: rgba(255, 215, 0, 0.4) !important;
-    border-color: gold;
+    background-color: rgba(238, 108, 77, 0.35) !important;
+    border-color: var(--standout-orange);
     animation: superPulse 1.5s infinite;
 }
 
@@ -108,10 +107,10 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80%;
-    height: 80%;
-    color: var(--accent-color);
-    opacity: 0.3;
+    width: 100%;
+    height: 100%;
+    color: var(--standout-orange);
+    opacity: 0.4;
     z-index: 0;
 }
 
@@ -153,10 +152,13 @@
     transform: translate(-50%, -50%);
     font-size: 4rem;
     font-weight: bold;
-    color: var(--accent-color);
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: var(--standout-orange);
+    text-shadow: 2px 2px 4px rgba(32, 40, 51, 0.4);
     animation: celebrate 1s ease-in-out infinite;
     z-index: 1001;
+}
+.celebration-message.super {
+    font-family: var(--font-accent);
 }
 
 /* Animations */
@@ -192,15 +194,15 @@
 @keyframes superPulse {
     0% {
         transform: scale(0.98);
-        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
+        box-shadow: 0 0 0 0 rgba(238, 108, 77, 0.4);
     }
     70% {
         transform: scale(1);
-        box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+        box-shadow: 0 0 0 10px rgba(238, 108, 77, 0);
     }
     100% {
         transform: scale(0.98);
-        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+        box-shadow: 0 0 0 0 rgba(238, 108, 77, 0);
     }
 }
 
@@ -209,15 +211,15 @@
     background-color: white;
 }
 
-.bingo-cell.free-space span {
+.bingo-cell.free-space span:not(.free-text) {
     font-weight: bold;
-    color: var(--primary-dark);
+    color: var(--dark-blue);
     z-index: 1;
     background-color: transparent;
 }
 
 .bingo-cell.free-space.selected {
-    background-color: var(--primary-dark);
+    background-color: var(--main-blue);
 }
 
 .bingo-cell.free-space.selected span {
@@ -239,7 +241,7 @@
     font-size: 2rem; /* Bigger star */
 }
 
-.free-space .cell-content {
+.free-space .cell-content:not(.free-space-content) {
     position: relative;
     display: flex;
     justify-content: center;
@@ -266,8 +268,6 @@
     font-weight: bold;
     text-align: center;
     line-height: 1.2;
-    color: var(--text-primary);
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Enhanced shadow for depth */
     pointer-events: none; /* Ensures clicks pass through */
 }
 
@@ -285,9 +285,47 @@
     pointer-events: none; /* Prevents SVG and text from capturing clicks */
 }
 
+/* FREE space (church logo): logo fills space, single-line text pinned to bottom in orange Reklame */
+.free-space .cell-content.free-space-content {
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    padding: 5% 4% 8%;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100%;
+    box-sizing: border-box;
+}
+.free-space .cell-content.free-space-content .free-space-logo {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 95%;
+    height: auto;
+    max-height: 70%;
+    object-fit: contain;
+    object-position: center top;
+    display: block;
+}
+.free-space .cell-content.free-space-content .free-text {
+    flex: 0 0 auto;
+    margin-top: auto !important;
+    white-space: nowrap;
+    color: #ee6c4d !important;
+    font-family: var(--font-accent) !important;
+    font-size: 1.1em !important;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    background-color: transparent !important;
+    padding: 0 !important;
+}
+
 .bingo-cell.marked {
-    background-color: rgba(255, 215, 0, 0.2);
-    border-color: #FFD700;
+    background-color: rgba(238, 108, 77, 0.15);
+    border-color: var(--standout-orange);
 }
 
 .bingo-cell.marked .cell-content {
@@ -295,8 +333,8 @@
 }
 
 .bingo-cell.winner {
-    background-color: rgba(76, 175, 80, 0.3);
-    border-color: #4CAF50;
+    background-color: rgba(44, 87, 119, 0.25);
+    border-color: var(--main-blue);
     animation: winPulse 1s forwards;
 }
 
@@ -304,15 +342,15 @@
 @keyframes winPulse {
     0% {
         transform: scale(1);
-        background-color: rgba(76, 175, 80, 0.1);
+        background-color: rgba(44, 87, 119, 0.15);
     }
     50% {
         transform: scale(1.05);
-        background-color: rgba(76, 175, 80, 0.3);
+        background-color: rgba(44, 87, 119, 0.3);
     }
     100% {
         transform: scale(1);
-        background-color: rgba(76, 175, 80, 0.2);
+        background-color: rgba(44, 87, 119, 0.25);
     }
 }
 
@@ -361,8 +399,8 @@
     }
 }
 
-/* Make sure FREE space still works correctly */
-.free-space .cell-content {
+/* Make sure FREE space still works correctly (star layout; logo uses .free-space-content) */
+.free-space .cell-content:not(.free-space-content) {
     position: relative;
     display: flex;
     justify-content: center;
@@ -410,11 +448,15 @@
     transform: translate(-50%, -50%) scale(0);
     font-size: 4rem;
     font-weight: bold;
-    color: #FFD700;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    color: var(--standout-orange);
+    text-shadow: 2px 2px 4px rgba(32, 40, 51, 0.5);
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
+}
+
+.bingo-message.super-bingo-font {
+    font-family: var(--font-accent);
 }
 
 .bingo-message.show {
@@ -454,11 +496,11 @@
     aspect-ratio: 1;
     width: 100%;
     height: 100%;
-    border: 2px solid #ddd;
+    border: 2px solid var(--secondary-blue-mid);
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
-    background-color: rgba(255, 0, 0, 0.1);
+    background-color: var(--card-background);
     overflow: hidden; /* Ensure images don't spill out */
 }
 
@@ -501,8 +543,8 @@
     text-align: center;
 }
 
-/* FREE space specific styles */
-.free-space .cell-content {
+/* FREE space specific styles (for star/SVG layout; logo layout uses .free-space-content above) */
+.free-space .cell-content:not(.free-space-content) {
     position: absolute;
     top: 0;
     left: 0;
@@ -523,6 +565,7 @@
     z-index: 1;
 }
 
+.free-space .cell-content:not(.free-space-content) .free-text,
 .free-text {
     position: relative;
     z-index: 2;
@@ -530,6 +573,8 @@
     font-weight: bold;
     text-align: center;
     line-height: 1.2;
+}
+.free-space .cell-content:not(.free-space-content) .free-text {
     background-color: rgba(255, 255, 255, 0.8);
     padding: 5px 10px;
     border-radius: 4px;

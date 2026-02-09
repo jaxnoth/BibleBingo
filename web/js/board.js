@@ -32,45 +32,8 @@ async function generateBingo() {
         const reference = referenceInput ? referenceInput.value : '';
         debug('Bible reference:', reference);
 
-        debug('Fetching sermon topics...');
-        const topics = await getSermonTopics(reference);
-        debug('Received topics:', topics);
-
-        if (!topics || !Array.isArray(topics) || topics.length === 0) {
-            debug('No topics received, using fallback');
-            // Use fallback topics if none received
-            const fallbackTopics = [
-                { word: "Love", imageDescription: "heart symbol" },
-                { word: "Faith", imageDescription: "praying hands" },
-                { word: "Hope", imageDescription: "sunrise over mountains" },
-                { word: "Grace", imageDescription: "dove in flight" },
-                { word: "Peace", imageDescription: "olive branch" },
-                { word: "Joy", imageDescription: "smiling face" },
-                { word: "Truth", imageDescription: "open bible" },
-                { word: "Light", imageDescription: "shining candle" },
-                { word: "Life", imageDescription: "growing tree" },
-                { word: "Cross", imageDescription: "wooden cross" },
-                { word: "Prayer", imageDescription: "folded hands" },
-                { word: "Mercy", imageDescription: "helping hands" },
-                { word: "Spirit", imageDescription: "dove flying" },
-                { word: "Word", imageDescription: "open bible pages" },
-                { word: "Saved", imageDescription: "rescue lifeline" },
-                { word: "Believe", imageDescription: "mountain faith" },
-                { word: "Heaven", imageDescription: "clouds and light" },
-                { word: "Glory", imageDescription: "sunburst" },
-                { word: "Praise", imageDescription: "raised hands" },
-                { word: "Holy", imageDescription: "flame" },
-                { word: "Eternal", imageDescription: "infinity symbol" },
-                { word: "Blessed", imageDescription: "rainbow" },
-                { word: "Gospel", imageDescription: "scroll" },
-                { word: "Amen", imageDescription: "praying hands" }
-            ];
-            await createBoard(fallbackTopics);
-            return;
-        }
-
-        await createBoard(topics);
-        debug('Board creation completed');
+        const { topics, usedFallback, fallbackReason, tagline } = await getSermonTopics(reference);
+        await createBoard(topics, usedFallback, fallbackReason, tagline);
 
     } catch (error) {
         debug('Error generating bingo:', error);
@@ -80,13 +43,40 @@ async function generateBingo() {
     }
 }
 
-async function createBoard(topics) {
-    debug('Creating board with topics:', topics);
+const DEFAULT_TAGLINE = 'Kids during the service';
+
+async function createBoard(topics, usedFallback, fallbackReason, tagline) {
+    debug('Creating board...');
     const bingoCard = document.getElementById('bingoCard');
 
     if (!bingoCard) {
         debug('Could not find bingoCard element');
         return;
+    }
+
+    // Update header tagline from message summary (or default when fallback / no tagline)
+    const taglineEl = document.getElementById('header-tagline');
+    if (taglineEl) {
+        taglineEl.textContent = (tagline && tagline.trim()) ? tagline.trim() : DEFAULT_TAGLINE;
+    }
+
+    // Update subtle fallback indicator (remove previous, show only when fallback was used)
+    const existingIndicator = document.getElementById('fallback-indicator');
+    if (existingIndicator) existingIndicator.remove();
+
+    if (usedFallback) {
+        const inputSection = document.querySelector('.input-section');
+        if (inputSection && inputSection.parentNode) {
+            const indicator = document.createElement('p');
+            indicator.id = 'fallback-indicator';
+            indicator.className = 'fallback-indicator';
+            indicator.setAttribute('aria-label', 'Board uses default word list');
+            indicator.textContent = 'Default word list';
+            if (fallbackReason) {
+                indicator.title = fallbackReason;
+            }
+            inputSection.parentNode.insertBefore(indicator, inputSection.nextSibling);
+        }
     }
 
     // Clear any existing content and remove any existing event listeners
@@ -97,9 +87,11 @@ async function createBoard(topics) {
     resetBingoStates();
     debug('Reset bingo states');
 
-    // Ensure exactly 24 topics (25th space is FREE)
+    // Ensure exactly 24 topics (25th space is FREE) — all from API when not fallback
     const shuffledTopics = shuffleArray([...topics]).slice(0, 24);
-    debug('Shuffled and sliced topics:', shuffledTopics);
+    if (!usedFallback && topics.length > 0) {
+        debug('[Bible Bingo] Board using', shuffledTopics.length, 'topics from API:', shuffledTopics.map(t => t.word).join(', '));
+    }
     let topicIndex = 0;
 
     // Phase 1: Create all cells with words
@@ -108,34 +100,13 @@ async function createBoard(topics) {
         const cell = document.createElement('div');
         cell.className = 'bingo-cell';
 
-        // Center cell (index 12) is always FREE
+        // Center cell (index 12) is always FREE — church logo + text
         if (i === 12) {
             debug('Creating free space at index 12');
             cell.innerHTML = `
                 <div class="cell-content free-space-content">
-                    <svg class="star-background" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" pointer-events="none">
-                        <defs>
-                            <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
-                            </linearGradient>
-                            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-                                <feOffset dx="2" dy="2" result="offsetblur"/>
-                                <feFlood flood-color="#000000" flood-opacity="0.3"/>
-                                <feComposite in2="offsetblur" operator="in"/>
-                                <feMerge>
-                                    <feMergeNode/>
-                                    <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                            </filter>
-                        </defs>
-                        <path class="star" d="M50 0 L61 35 L97 35 L68 57 L79 91 L50 70 L21 91 L32 57 L3 35 L39 35 Z"
-                            style="fill:url(#starGradient); filter:url(#shadow);" />
-                        <path class="highlight" d="M50 0 L61 35 L97 35 L68 57 L79 91 L50 70"
-                            style="fill:none; stroke:#FFE45C; stroke-width:2; opacity:0.6;" />
-                    </svg>
-                    <span class="free-text" pointer-events="none">FREE<br>SPACE</span>
+                    <img src="images/logo.png" alt="" class="free-space-logo" width="80" height="80">
+                    <span class="free-text" pointer-events="none">FREE SPACE</span>
                 </div>
             `;
             cell.classList.add('free-space', 'marked');
