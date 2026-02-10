@@ -95,7 +95,7 @@ main {
     display: flex;
     flex-direction: column;
     padding: var(--spacing-md);
-    overflow: hidden;
+    overflow-y: auto;
     min-height: 0;
 }
 
@@ -147,22 +147,24 @@ main {
     letter-spacing: 0.5px;
 }
 
-footer {
-    flex: 0 0 auto;
-    padding: var(--spacing-sm);
-    background-color: var(--dark-blue);
-    color: var(--off-white);
+/* Copyright text after the bingo card (no full bar) */
+.copyright {
+    margin: var(--spacing-md) 0 0;
+    padding: 0;
     text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
-footer a {
-    color: var(--secondary-blue-light);
+.copyright a {
+    color: var(--main-blue);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: color 0.2s ease;
 }
 
-footer a:hover {
-    color: var(--off-white);
+.copyright a:hover {
+    color: var(--dark-blue);
     text-decoration: underline;
 }
 
